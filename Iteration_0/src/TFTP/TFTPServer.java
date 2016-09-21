@@ -11,7 +11,7 @@ import java.util.*;
 public class TFTPServer {
 
 // types of requests we can receive
-public static enum Request { READ, WRITE, ERROR};
+public static enum Request { READ, WRITE, ERROR, DATA, ACK};
 // responses for valid requests
 public static final byte[] readResp = {0, 3, 0, 1};
 public static final byte[] writeResp = {0, 4, 0, 0};
@@ -83,6 +83,8 @@ public void receiveAndSendTFTP() throws Exception
       if (data[0]!=0) req = Request.ERROR; // bad
       else if (data[1]==1) req = Request.READ; // could be read
       else if (data[1]==2) req = Request.WRITE; // could be write
+      else if (data[1]==3) req = Request.DATA; //could be data
+      else if (data[1]==4) req = Request.ACK; //could be an Acknowledge
       else req = Request.ERROR; // bad
 
       if (req!=Request.ERROR) { // check for filename
@@ -113,6 +115,10 @@ public void receiveAndSendTFTP() throws Exception
          response = readResp;
       } else if (req==Request.WRITE) { // for Write it's 0400
          response = writeResp;
+      }else if (req==Request.DATA){
+    	  //do something
+      }else if (req==Request.ACK){
+    	  //do something
       } else { // it was invalid, just quit
          throw new Exception("Not yet implemented");
       }
