@@ -1,5 +1,3 @@
-package TFTP;
-
 //TFTPClient.java
 //This class is the client side for a very simple assignment based on TFTP on
 //UDP/IP. The client uses one port and sends a read or write request and gets 

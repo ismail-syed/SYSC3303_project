@@ -1,5 +1,3 @@
-package TFTP;
-
 //TFTPSim.java
 //This class is the beginnings of an error simulator for a simple TFTP server 
 //based on UDP/IP. The simulator receives a read or write packet from a client and

@@ -1,5 +1,3 @@
-package TFTP;
-
 //TFTPServer.java
 //This class is the server side of a simple TFTP server based on
 //UDP/IP. The server receives a read or write packet from a client and
