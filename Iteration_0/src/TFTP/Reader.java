@@ -13,7 +13,9 @@ public class Reader {
 	   Writer write = new Writer("C:\\Users\\shast\\Desktop\\dest.txt");
 	   testArray = read.fileToByteArrays();
 	   for(byte[] array: testArray){
-		   write.writeToFile(array);
+		   if(array[0]!=0){
+			   write.writeToFile(array);
+		   }
 	   }
 	   write.closeFile();
 	}
@@ -34,7 +36,7 @@ public class Reader {
 		
 		try {
 			while(in.read(data) != -1){
-				if(data.length != 511){
+				if(data[511]==0){
 					for(len=0;len<data.length;len++) {
 			              if (data[len] == 0) break;
 			        }
@@ -43,8 +45,11 @@ public class Reader {
 					finalData = data;
 				}
 				arrayOfDataArrays.add(finalData);
-				System.out.println(new String(finalData));
+				//System.out.println(new String(finalData));
 				data = new byte[512];
+				if(finalData.length == 512 && in.available() == 0){
+					arrayOfDataArrays.add(new byte[] {0});
+				}
 			}
 			in.close();
 		} catch (IOException e) {

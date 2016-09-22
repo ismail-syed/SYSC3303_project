@@ -22,7 +22,7 @@ public class Writer {
 	
 	public boolean writeToFile(byte[] data){
 		try {
-			System.out.println(new String(data));
+			//System.out.println(new String(data));
 			int n = data.length;
 			out.write(data,0,n);
 			return true;
