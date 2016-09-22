@@ -6,6 +6,18 @@ public class Reader {
 	private BufferedInputStream in;
 	private ArrayList<byte[]> arrayOfDataArrays;
 
+	public static void main( String args[] )
+	{
+	   ArrayList<byte[]> testArray = new ArrayList<byte[]>();
+	   Reader read = new Reader("C:\\Users\\shast\\Desktop\\src.txt");
+	   Writer write = new Writer("C:\\Users\\shast\\Desktop\\dest.txt");
+	   testArray = read.fileToByteArrays();
+	   for(byte[] array: testArray){
+		   write.writeToFile(array);
+	   }
+	   write.closeFile();
+	}
+	
 	public Reader(String filename){
 		try {
 			in = new BufferedInputStream(new FileInputStream(filename));
@@ -16,15 +28,30 @@ public class Reader {
 	
 	public ArrayList<byte[]> fileToByteArrays(){
 		byte[] data = new byte[512];
-		int n;
+		arrayOfDataArrays = new ArrayList<byte[]>();
+		byte[] finalData;
+		int n,len;
+		
 		try {
 			while((n = in.read(data)) != -1){
-				arrayOfDataArrays.add(data);
+				if(data.length != 511){
+					for(len=0;len<data.length;len++) {
+			              if (data[len] == 0) break;
+			        }
+					finalData = Arrays.copyOfRange(data,0,len);
+				}else{
+					finalData = data;
+				}
+				arrayOfDataArrays.add(finalData);
+				System.out.println(new String(finalData));
+				data = new byte[512];
 			}
+			in.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		//Collections.reverse(arrayOfDataArrays);
 		return arrayOfDataArrays;
 	}
 }
