@@ -2,6 +2,13 @@ import java.io.*;
 
 public class Writer {
 	
+	public static void main( String args[] )
+	{
+	   String text = "hello world";
+	   Writer write = new Writer("C:\\Users\\shast\\Desktop\\testing.txt");
+	   write.writeToFile(text.getBytes());
+	}
+	
 	BufferedOutputStream out;
 	
 	public Writer(String filename){
@@ -14,7 +21,10 @@ public class Writer {
 	
 	public boolean writeToFile(byte[] data){
 		try {
-			out.write(data,0,data.length);
+			System.out.println(new String(data));
+			int n = data.length;
+			out.write(data,0,n);
+			out.close();
 			return true;
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
