@@ -30,10 +30,10 @@ public class Reader {
 		byte[] data = new byte[512];
 		arrayOfDataArrays = new ArrayList<byte[]>();
 		byte[] finalData;
-		int n,len;
+		int len;
 		
 		try {
-			while((n = in.read(data)) != -1){
+			while(in.read(data) != -1){
 				if(data.length != 511){
 					for(len=0;len<data.length;len++) {
 			              if (data[len] == 0) break;
