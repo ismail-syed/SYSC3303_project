@@ -7,6 +7,9 @@ public class DataPacket {
 	private ByteArrayOutputStream byteStream;
 	
 	public boolean validate(byte[] data){
+		if(data.length > 516) return false;
+		else if (data[0]!=0) return false;
+	    else if (data[1]!=3) return false;
 		return true;
 	}
 	
