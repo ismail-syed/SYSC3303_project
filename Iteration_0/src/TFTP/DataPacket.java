@@ -4,16 +4,21 @@ import java.io.*;
 
 public class DataPacket {
 	
+	private byte[] array;
 	private ByteArrayOutputStream byteStream;
 	private int blockNumber;
 	
-	public boolean validate(byte[] data){
+	public DataPacket(byte[] data){
+		array = data;
+	}
+	
+	public boolean validate(){
 		byte[] temp = new byte[2];
-		if(data[0]!=0) return false;
-		else if (data[1]!=3) return false;
-	    else if (data.length > 516) return false;
-	    else if(hasZeros(data)) return false;
-		temp[0] = data[2]; temp[1] = data[3];
+		if(array[0]!=0) return false;
+		else if (array[1]!=3) return false;
+	    else if (array.length > 516) return false;
+	    else if(hasZeros(array)) return false;
+		temp[0] = array[2]; temp[1] = array[3];
 		ByteBuffer buf = ByteBuffer.wrap(temp);
 		blockNumber = buf.getInt();
 		return true;
