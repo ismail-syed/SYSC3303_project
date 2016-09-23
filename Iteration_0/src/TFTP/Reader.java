@@ -6,7 +6,8 @@ public class Reader {
 	private BufferedInputStream in;
 	private ArrayList<byte[]> arrayOfDataArrays;
 
-	public static void main( String args[] )
+	
+	/*public static void main( String args[] )
 	{
 	   ArrayList<byte[]> testArray = new ArrayList<byte[]>();
 	   Reader read = new Reader("C:\\Users\\shast\\Desktop\\src.txt");
@@ -18,14 +19,21 @@ public class Reader {
 		   }
 	   }
 	   write.closeFile();
-	}
+	}*/
 	
 	public Reader(String filename){
-		try {
-			in = new BufferedInputStream(new FileInputStream(filename));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		createInput(filename);
+		fileToByteArrays();
+	}
+	
+	public Reader(String filename, String location){
+		String path = parseFilePath(location);
+		createInput(path + filename);
+		fileToByteArrays();
+	}
+	
+	public byte[] getData(int blockNum){
+		return arrayOfDataArrays.get(blockNum);
 	}
 	
 	public ArrayList<byte[]> fileToByteArrays(){
@@ -58,5 +66,18 @@ public class Reader {
 		}
 		//Collections.reverse(arrayOfDataArrays);
 		return arrayOfDataArrays;
+	}
+	
+	private void createInput(String filename){
+		try {
+			in = new BufferedInputStream(new FileInputStream(filename));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private String parseFilePath(String path){
+		String resultString = "";
+		return resultString;
 	}
 }
