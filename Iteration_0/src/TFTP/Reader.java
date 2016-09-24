@@ -22,13 +22,14 @@ public class Reader {
 	}*/
 	
 	public Reader(String filename){
-		createInput(filename);
+		File file = new File(filename);
+		createInput(file);
 		fileToByteArrays();
 	}
 	
 	public Reader(String filename, String location){
-		String path = parseFilePath(location);
-		createInput(path + filename);
+		File filepath = new File(location+filename);
+		createInput(filepath);
 		fileToByteArrays();
 	}
 	
@@ -68,16 +69,11 @@ public class Reader {
 		return arrayOfDataArrays;
 	}
 	
-	private void createInput(String filename){
+	private void createInput(File path){
 		try {
-			in = new BufferedInputStream(new FileInputStream(filename));
+			in = new BufferedInputStream(new FileInputStream(path));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	private String parseFilePath(String path){
-		String resultString = "";
-		return resultString;
 	}
 }

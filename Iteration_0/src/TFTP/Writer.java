@@ -13,8 +13,18 @@ public class Writer {
 	BufferedOutputStream out;
 	
 	public Writer(String filename){
+		File file = new File(filename);
+		createOutput(file);
+	}
+	
+	public Writer(String filename,String location){
+		File file = new File(location+filename);
+		createOutput(file);
+	}
+	
+	private void createOutput(File path){
 		try {
-			out = new BufferedOutputStream(new FileOutputStream(filename));
+			out = new BufferedOutputStream(new FileOutputStream(path));
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
