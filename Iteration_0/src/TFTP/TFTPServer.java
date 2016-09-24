@@ -20,6 +20,12 @@ public static enum Request { READ, WRITE, ERROR, DATA, ACK};
 // UDP datagram packets and sockets used to send / receive
 private DatagramPacket sendPacket, receivePacket;
 private DatagramSocket receiveSocket, sendSocket;
+Reader reader;
+Writer writer;
+DataPacket dataPacket;
+WRQPacket writeRequest;
+RRQPacket readRequest;
+ACKPacket ack;
 
 public TFTPServer()
 {
@@ -38,11 +44,6 @@ public void receiveAndSendTFTP() throws Exception
 {
 
    byte[] data,response = new byte[516];
-   Reader reader;
-   Writer writer;
-   DataPacket dataPacket;
-   WRQPacket writeRequest;
-   RRQPacket readRequest;
    
    Request req; // READ, WRITE, DATA, ACK or ERROR
    
@@ -117,14 +118,27 @@ public void receiveAndSendTFTP() throws Exception
       
       // Create a response.
       if (req==Request.READ) { // for Read it's 0301
-         
-    	 //response = readResp;
+         readRequest = new RRQPacket(data);
+         reader = new Reader(readRequest.getFilename());
+         response = reader.getData(1);
       } else if (req==Request.WRITE) { // for Write it's 0400
-         //response = writeResp;
+          writeRequest = new WRQPacket(data);
+          writer = new Writer(writeRequest.getFilename());
+          ack = new ACKPacket(0);
+          //response = ack.getMessage();
       }else if (req==Request.DATA){
-    	  //do something
+    	  dataPacket = new DataPacket(data);
+    	  if(dataPacket.validate()){
+    		  writer.writeToFile(data);
+    		  ack = new ACKPacket(dataPacket.getBlockNumber());
+    		  response = ack.getMessage();
+    	  }else{
+    		  System.out.println("Something Went Very Wrong");
+    		  System.exit(1);
+    	  }
       }else if (req==Request.ACK){
-    	  //do something
+    	  ack = new ACKPacket(data);
+    	  reader.getData(dataPacket.getBlockNumber());
       } else { // it was invalid, just quit
          throw new Exception("Not yet implemented");
       }
