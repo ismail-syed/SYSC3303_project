@@ -32,6 +32,10 @@ public class Reader {
 		fileToByteArrays();
 	}
 	
+	public byte[] getData(int blockNum){
+		return arrayOfDataArrays.get(blockNum);
+	}
+	
 	public ArrayList<byte[]> fileToByteArrays(){
 		byte[] data = new byte[512];
 		arrayOfDataArrays = new ArrayList<byte[]>();
