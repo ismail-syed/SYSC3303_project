@@ -7,14 +7,15 @@
 import java.io.*; 
 import java.net.*;
 import java.util.*;
+import TFTPPackets.*;
 
 public class TFTPServer {
 
 // types of requests we can receive
 public static enum Request { READ, WRITE, ERROR, DATA, ACK};
 // responses for valid requests
-public static final byte[] readResp = {0, 3, 0, 1};
-public static final byte[] writeResp = {0, 4, 0, 0};
+//public static final byte[] readResp = {0, 3, 0, 1};
+//public static final byte[] writeResp = {0, 4, 0, 0};
 
 // UDP datagram packets and sockets used to send / receive
 private DatagramPacket sendPacket, receivePacket;
@@ -36,19 +37,23 @@ public TFTPServer()
 public void receiveAndSendTFTP() throws Exception
 {
 
-   byte[] data,
-          response = new byte[4];
+   byte[] data,response = new byte[516];
+   Reader reader;
+   Writer writer;
+   DataPacket dataPacket;
+   WRQPacket writeRequest;
+   RRQPacket readRequest;
    
-   Request req; // READ, WRITE or ERROR
+   Request req; // READ, WRITE, DATA, ACK or ERROR
    
-   String filename, mode;
-   int len, j=0, k=0;
+   //String filename, mode;
+   int len,j=0; //k=0;
 
    for(;;) { // loop forever
       // Construct a DatagramPacket for receiving packets up
       // to 100 bytes long (the length of the byte array).
       
-      data = new byte[100];
+      data = new byte[516];
       receivePacket = new DatagramPacket(data, data.length);
 
       System.out.println("Server: Waiting for packet.");
@@ -87,7 +92,7 @@ public void receiveAndSendTFTP() throws Exception
       else if (data[1]==4) req = Request.ACK; //could be an Acknowledge
       else req = Request.ERROR; // bad
 
-      if (req!=Request.ERROR) { // check for filename
+      /*if (req!=Request.ERROR) { // check for filename
           // search for next all 0 byte
           for(j=2;j<len;j++) {
               if (data[j] == 0) break;
@@ -106,15 +111,16 @@ public void receiveAndSendTFTP() throws Exception
          if (k==len) req=Request.ERROR; // didn't find a 0 byte
          if (k==j+1) req=Request.ERROR; // mode is 0 bytes long
          mode = new String(data,j,k-j-1);
-      }
+      }*/
       
-      if(k!=len-1) req=Request.ERROR; // other stuff at end of packet        
+      //if(k!=len-1) req=Request.ERROR; // other stuff at end of packet        
       
       // Create a response.
       if (req==Request.READ) { // for Read it's 0301
-         response = readResp;
+         
+    	 //response = readResp;
       } else if (req==Request.WRITE) { // for Write it's 0400
-         response = writeResp;
+         //response = writeResp;
       }else if (req==Request.DATA){
     	  //do something
       }else if (req==Request.ACK){

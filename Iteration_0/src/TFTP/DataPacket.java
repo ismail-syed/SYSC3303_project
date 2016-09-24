@@ -6,7 +6,7 @@ public class DataPacket {
 	
 	private byte[] array;
 	private ByteArrayOutputStream byteStream;
-	private int blockNumber; // for what?
+	private int blockNumber;
 
 	
 	public DataPacket(int blockNumber, byte[] data){
@@ -56,9 +56,9 @@ public class DataPacket {
 		return byteStream.toByteArray();
 	}
 	
-	/*public int getBlockNumber(){
+	public int getBlockNumber(){
 		return blockNumber;
-	}*/
+	}
 	
 	private boolean hasZeros(byte[] array){	
 		for(int j = 4;j<array.length;j++) { 
