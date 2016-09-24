@@ -133,7 +133,7 @@ public void receiveAndSendTFTP() throws Exception
     	  response = ack.getMessage();
       }else if (req==Request.ACK){
     	  ack = new ACKPacket(data);
-    	  reader.getData(dataPacket.getBlockNumber());
+    	  reader.getData(dataPacket.getBlockNumber()+1);
       } else { // it was invalid, just quit
          throw new Exception("Not yet implemented");
       }
