@@ -12,10 +12,18 @@ public class DataPacket {
 	public DataPacket(int blockNumber, byte[] data){
 		this.blockNumber = blockNumber;
 		array = data;
+		if(!validate()){
+			System.out.println("Something Went Very Wrong");
+  		    System.exit(1);
+		}
 	}
 	
 	public DataPacket(byte[] data){
 		array = data;
+		if(!validate()){
+			System.out.println("Something Went Very Wrong");
+  		    System.exit(1);
+		}
 	}
 	
 	public boolean validate(){

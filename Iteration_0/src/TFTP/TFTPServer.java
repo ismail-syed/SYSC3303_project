@@ -128,14 +128,9 @@ public void receiveAndSendTFTP() throws Exception
           //response = ack.getMessage();
       }else if (req==Request.DATA){
     	  dataPacket = new DataPacket(data);
-    	  if(dataPacket.validate()){
-    		  writer.writeToFile(data);
-    		  ack = new ACKPacket(dataPacket.getBlockNumber());
-    		  response = ack.getMessage();
-    	  }else{
-    		  System.out.println("Something Went Very Wrong");
-    		  System.exit(1);
-    	  }
+    	  writer.writeToFile(data);
+    	  ack = new ACKPacket(dataPacket.getBlockNumber());
+    	  response = ack.getMessage();
       }else if (req==Request.ACK){
     	  ack = new ACKPacket(data);
     	  reader.getData(dataPacket.getBlockNumber());
