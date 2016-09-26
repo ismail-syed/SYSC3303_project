@@ -68,6 +68,11 @@ public class DataPacket {
 		return blockNumber;
 	}
 	
+	public int getNextBlockNumber(){
+		blockNumber += 1;
+		return blockNumber;
+	}
+	
 	private boolean hasZeros(byte[] array){	
 		for(int j = 4;j<array.length;j++) { 
             if (array[j] == 0) return false;

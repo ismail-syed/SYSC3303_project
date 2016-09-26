@@ -125,7 +125,7 @@ public void receiveAndSendTFTP() throws Exception
           writeRequest = new WRQPacket(data);
           writer = new Writer(writeRequest.getFilename());
           ack = new ACKPacket(0);
-          //response = ack.getMessage();
+          response = ack.getMessage();
       }else if (req==Request.DATA){
     	  dataPacket = new DataPacket(data);
     	  writer.writeToFile(data);
@@ -133,7 +133,7 @@ public void receiveAndSendTFTP() throws Exception
     	  response = ack.getMessage();
       }else if (req==Request.ACK){
     	  ack = new ACKPacket(data);
-    	  reader.getData(dataPacket.getBlockNumber()+1);
+    	  response = reader.getData(dataPacket.getNextBlockNumber());
       } else { // it was invalid, just quit
          throw new Exception("Not yet implemented");
       }
