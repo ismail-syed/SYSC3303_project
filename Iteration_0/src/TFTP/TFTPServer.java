@@ -13,6 +13,7 @@ import TFTPPackets.WRQPacket;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 import static TFTPPackets.TFTPPacket.*;
 
@@ -20,6 +21,7 @@ public class TFTPServer {
     // UDP datagram packets and sockets used to send / receive
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket receiveSocket, sendSocket;
+    private static String filePath;
 
     public TFTPServer()
     {
@@ -76,7 +78,11 @@ public class TFTPServer {
                 //Parse RRQ
                 RRQPacket rrqPacket = new RRQPacket(data);
                 //Read from File
-                tftpReader = new TFTPReader(new File(".").getCanonicalPath()+ "\\Server\\" + rrqPacket.getFilename());
+                
+                //just so we dont loose the line
+                //new File(".").getCanonicalPath()+ "\\Server\\" 
+                
+                tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //send first block of file
                 DataPacket dataPacket = new DataPacket(1, tftpReader.getFileBlock(1));
                 sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
@@ -88,7 +94,7 @@ public class TFTPServer {
                 //Parse from file
                 WRQPacket wrqPacket = new WRQPacket(data);
                 //Open file
-                tftpWriter = new TFTPWriter(new File(".").getCanonicalPath()+ "\\Server\\" + wrqPacket.getFilename(),false);
+                tftpWriter = new TFTPWriter(new File(filePath + wrqPacket.getFilename()).getPath(),false);
                 //create ack packet with block number 0
                 ACKPacket ackPacket = new ACKPacket(0);
                 //get and send ack packet thorugh dgram socket
@@ -128,6 +134,11 @@ public class TFTPServer {
 
     public static void main( String args[] ) throws Exception
     {
+    	Scanner in = new Scanner(System.in);
+    	System.out.println("Enter the Directory Path");
+    	filePath = in.nextLine();
+    	System.out.println("You have entered a Directory Path");
+    	filePath += "\\";
         TFTPServer c = new TFTPServer();
         //loop for ever
         for(;;){
