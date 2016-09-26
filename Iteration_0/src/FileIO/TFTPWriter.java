@@ -35,6 +35,7 @@ public class TFTPWriter {
      * This method writes a byte array to the file opened in the outputStream
      *
      * @param data the byte array to write the file
+     * @since 1.0
      */
     public void writeToFile(byte[] data) throws Exception {
         outputStream.write(data);
@@ -42,6 +43,7 @@ public class TFTPWriter {
 
     /**
      * This method closes the outputStream and releases any system resources associated with it
+     * @since 1.0
      */
     public void closeHandle() throws IOException {
         outputStream.close();
