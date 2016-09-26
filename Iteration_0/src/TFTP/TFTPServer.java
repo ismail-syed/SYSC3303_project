@@ -120,7 +120,8 @@ public void receiveAndSendTFTP() throws Exception
       if (req==Request.READ) { // for Read it's 0301
          readRequest = new RRQPacket(data);
          reader = new Reader(readRequest.getFilename());
-         response = reader.getData(1);
+         dataPacket = new dataPacket(1,reader.getData(1));
+         response = dataPacket.getdata();
       } else if (req==Request.WRITE) { // for Write it's 0400
           writeRequest = new WRQPacket(data);
           writer = new Writer(writeRequest.getFilename());
