@@ -134,11 +134,13 @@ public class TFTPServer {
 
     public static void main( String args[] ) throws Exception
     {
+    	//Requests the user to input a filepath for the directory you want to work with
     	Scanner in = new Scanner(System.in);
     	System.out.println("Enter the Directory Path");
     	filePath = in.nextLine();
     	System.out.println("You have entered a Directory Path");
     	filePath += "\\";
+    	//start the main program
         TFTPServer c = new TFTPServer();
         //loop for ever
         for(;;){
