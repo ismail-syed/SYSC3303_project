@@ -5,9 +5,11 @@ package TFTP; /**
  * @version 1.0
  */
 import FileIO.TFTPReader;
+import FileIO.TFTPWriter;
 import TFTPPackets.ACKPacket;
 import TFTPPackets.DataPacket;
 import TFTPPackets.RRQPacket;
+import TFTPPackets.WRQPacket;
 
 import java.io.*;
 import java.net.*;
@@ -32,7 +34,8 @@ public class TFTPServer {
         }
     }
 
-    private TFTPReader tftpReader = null;
+    private TFTPReader tftpReader;
+    private TFTPWriter tftpWriter;
 
     /**
      * This method can handle RRQ and ACK packets from the client
@@ -82,15 +85,36 @@ public class TFTPServer {
             }
             else if(opcode == Opcode.WRITE){
                 System.out.println("Opcode: WRITE");
+                //Parse from file
+                WRQPacket wrqPacket = new WRQPacket(data);
+                //Open file
+                tftpWriter = new TFTPWriter(new File(".").getCanonicalPath()+ "\\Server\\" + wrqPacket.getFilename(),false);
+                //create ack packet with block number 0
+                ACKPacket ackPacket = new ACKPacket(0);
+                //get and send ack packet thorugh dgram socket
+                sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
+                receivePacket.getAddress(), receivePacket.getPort());
+                sendSocket.send(sendPacket);
             }
             else if(opcode == Opcode.DATA){
                 System.out.println("Opcode: DATA");
+                //create/validate data
+                DataPacket dataPacket = new DataPacket(data);
+                //write the data you just received
+                tftpWriter.writeToFile(dataPacket.getData());
+                //create an ack packet from corresponding block number
+                ACKPacket ackPacket = new ACKPacket(dataPacket.getBlockNumber());
+                //create and send ack packet
+                sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
+                receivePacket.getAddress(), receivePacket.getPort());
+                sendSocket.send(sendPacket);
+                
             }
             else if(opcode == Opcode.ACK){
                 System.out.println("Opcode: ACK");
                 ACKPacket ackPacket = new ACKPacket(data);
                 //send next block of file until there are no more blocks
-                if(ackPacket.getBlockNumber() != tftpReader.getNumberOfBlocks()){
+                if(ackPacket.getBlockNumber() != tftpReader.getNumberOfBlocks()+1){
                     DataPacket dataPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
                     sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
                     receivePacket.getAddress(), receivePacket.getPort());
