@@ -47,6 +47,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
      * Gets the file name in the RRQ or WRQ packet
      *
      * @return the file name in the RRQ or WRQ packet
+     * @since 1.0
      */
     public String getFilename() {
         return fileName;
@@ -56,6 +57,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
      * Gets the mode in the RRQ or WRQ packet
      *
      * @return the mode in the RRQ or WRQ packet
+     * @since 1.0
      */
     public Mode getMode() {
         return mode;
@@ -65,6 +67,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
      * Creates a new RRQ or WRQ packet from byte array representation
      *
      * @param packetAsByteArray byte array representation of packet
+     * @since 1.0
      */
     void createPacket(byte[] packetAsByteArray) throws MalformedPacketException, PacketOverflowException {
         StringBuilder sb = new StringBuilder();
@@ -134,6 +137,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
      * @param opcode   the opcode to go in the RRQ or WRQ packet
      * @param fileName the filename to go in the RRQ or WRQ packet
      * @param mode     the mode to go in the RRQ or WRQ packet
+     * @since 1.0
      */
     void createPacket(Opcode opcode, String fileName, Mode mode) throws PacketOverflowException {
         if (opcode == Opcode.READ || opcode == Opcode.WRITE) {
@@ -166,6 +170,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
      * The modes are mapped to their string representation on startup
      * allowing the retrieval of the {@link Mode} enum as an enum or
      * its string representation
+     * @since 1.0
      */
     public enum Mode {
         UNKNOWN("UNKNOWN"), NETASCII("NETASCII"), OCTET("OCTET");

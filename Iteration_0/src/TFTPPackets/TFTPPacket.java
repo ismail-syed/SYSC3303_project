@@ -44,6 +44,7 @@ public class TFTPPacket {
      * Return a string representation of the TFTP packet
      *
      * @return string representation of the TFTP packet
+     * @since 1.0
      */
     public static String toString(DataPacket ackPacket) {
         byte[] ackPacketAsByteArray = ackPacket.getByteArray();
@@ -67,6 +68,7 @@ public class TFTPPacket {
      * This method appends a byte to the packetByteArrayOutputStream
      *
      * @param b the byte to append to the packetByteArrayOutputStream
+     * @since 1.0
      */
     void addByte(byte b) throws PacketOverflowException {
         if (packetByteArrayOutputStream.size() < MAX_SIZE) {
@@ -80,6 +82,7 @@ public class TFTPPacket {
      * This method appends a byte array to the end of the packetByteArrayOutputStream
      *
      * @param ba the byte array to append to the packetByteArrayOutputStream
+     * @since 1.0
      */
     void addBytes(byte[] ba) throws PacketOverflowException, IOException {
         for (int i = 0; i < ba.length; i++) {
@@ -91,6 +94,7 @@ public class TFTPPacket {
      * Gets the byte array representation of the packet
      *
      * @return a byte array representation of a TFTP packet
+     * @since 1.0
      */
     public byte[] getByteArray() {
         return packetByteArrayOutputStream.toByteArray();
@@ -101,6 +105,7 @@ public class TFTPPacket {
      * The opcodes are mapped to their string representation on startup
      * allowing the retrieval of the {@link Opcode} enum as an enum or
      * its string representation
+     * @since 1.0
      */
     public enum Opcode {
         UNKNOWN(-1), READ(1), WRITE(2), DATA(3), ACK(4), ERROR(5);
