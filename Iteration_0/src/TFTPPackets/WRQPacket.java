@@ -4,7 +4,7 @@ import Exceptions.MalformedPacketException;
 import Exceptions.PacketOverflowException;
 
 /**
- * The {@link WRQPacket} class represents a RRQ packet as per the TFTP PROTOCOL (RFC 1350)
+ * The {@link WRQPacket} class represents a WRQ packet as per the TFTP PROTOCOL (RFC 1350)
  *
  * @author Team 3000000
  * @author Aritra Sengupta
