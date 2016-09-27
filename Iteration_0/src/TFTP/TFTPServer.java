@@ -5,12 +5,15 @@ package TFTP; /**
  * @version 1.0
  */
 import FileIO.TFTPReader;
+import FileIO.TFTPWriter;
 import TFTPPackets.ACKPacket;
 import TFTPPackets.DataPacket;
 import TFTPPackets.RRQPacket;
+import TFTPPackets.WRQPacket;
 
 import java.io.*;
 import java.net.*;
+import java.util.*;
 
 import static TFTPPackets.TFTPPacket.*;
 
@@ -18,6 +21,7 @@ public class TFTPServer {
     // UDP datagram packets and sockets used to send / receive
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket receiveSocket, sendSocket;
+    private static String filePath;
 
     public TFTPServer()
     {
@@ -32,7 +36,8 @@ public class TFTPServer {
         }
     }
 
-    private TFTPReader tftpReader = null;
+    private TFTPReader tftpReader;
+    private TFTPWriter tftpWriter;
 
     /**
      * This method can handle RRQ and ACK packets from the client
@@ -73,7 +78,11 @@ public class TFTPServer {
                 //Parse RRQ
                 RRQPacket rrqPacket = new RRQPacket(data);
                 //Read from File
-                tftpReader = new TFTPReader(new File(".").getCanonicalPath()+ "\\Server\\" + rrqPacket.getFilename());
+                
+                //just so we dont loose the line
+                //new File(".").getCanonicalPath()+ "\\Server\\" 
+                
+                tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //send first block of file
                 DataPacket dataPacket = new DataPacket(1, tftpReader.getFileBlock(1));
                 sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
@@ -82,9 +91,30 @@ public class TFTPServer {
             }
             else if(opcode == Opcode.WRITE){
                 System.out.println("Opcode: WRITE");
+                //Parse from file
+                WRQPacket wrqPacket = new WRQPacket(data);
+                //Open file
+                tftpWriter = new TFTPWriter(new File(filePath + wrqPacket.getFilename()).getPath(),false);
+                //create ack packet with block number 0
+                ACKPacket ackPacket = new ACKPacket(0);
+                //get and send ack packet thorugh dgram socket
+                sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
+                receivePacket.getAddress(), receivePacket.getPort());
+                sendSocket.send(sendPacket);
             }
             else if(opcode == Opcode.DATA){
                 System.out.println("Opcode: DATA");
+                //create/validate data
+                DataPacket dataPacket = new DataPacket(data);
+                //write the data you just received
+                tftpWriter.writeToFile(dataPacket.getData());
+                //create an ack packet from corresponding block number
+                ACKPacket ackPacket = new ACKPacket(dataPacket.getBlockNumber());
+                //create and send ack packet
+                sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
+                receivePacket.getAddress(), receivePacket.getPort());
+                sendSocket.send(sendPacket);
+                
             }
             else if(opcode == Opcode.ACK){
                 System.out.println("Opcode: ACK");
@@ -93,7 +123,7 @@ public class TFTPServer {
                 if(ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()){
                     DataPacket dataPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
                     sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
-                            receivePacket.getAddress(), receivePacket.getPort());
+                    receivePacket.getAddress(), receivePacket.getPort());
                     sendSocket.send(sendPacket);
                 }
             }
@@ -104,6 +134,13 @@ public class TFTPServer {
 
     public static void main( String args[] ) throws Exception
     {
+    	//Requests the user to input a filepath for the directory you want to work with
+    	Scanner in = new Scanner(System.in);
+    	System.out.println("Enter the Directory Path");
+    	filePath = in.nextLine();
+    	System.out.println("You have entered a Directory Path");
+    	filePath += "\\";
+    	//start the main program
         TFTPServer c = new TFTPServer();
         //loop for ever
         for(;;){
