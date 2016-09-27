@@ -90,7 +90,7 @@ public class TFTPServer {
                 System.out.println("Opcode: ACK");
                 ACKPacket ackPacket = new ACKPacket(data);
                 //send next block of file until there are no more blocks
-                if(ackPacket.getBlockNumber() != tftpReader.getNumberOfBlocks()){
+                if(ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()){
                     DataPacket dataPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
                     sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
                             receivePacket.getAddress(), receivePacket.getPort());
