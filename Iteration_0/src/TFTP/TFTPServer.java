@@ -23,6 +23,7 @@ public class TFTPServer {
     private DatagramPacket sendPacket, receivePacket;
     private DatagramSocket receiveSocket, sendSocket;
     private static String filePath;
+    private static boolean verbose;
 
     private TFTPServer() {
         try {
@@ -50,17 +51,39 @@ public class TFTPServer {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        Thread fileTransferThread = new Thread(new TFTPServerTransferThread(receivePacket, filePath));
+        Thread fileTransferThread = new Thread(new TFTPServerTransferThread(receivePacket, filePath, verbose));
         fileTransferThread.start();
     }
 
     public static void main(String args[]) throws Exception {
         //Requests the user to input a filepath for the directory you want to work with
         Scanner in = new Scanner(System.in);
-        System.out.println("Enter the Directory Path");
+        System.out.println("Enter the Directory Path: default/path");
+        System.out.println("default - type \"default\" to the relative director OR");
+        System.out.println("Enter the filepath of the directory");
         filePath = in.nextLine();
-        System.out.println("You have entered a Directory Path");
-        filePath += "\\";
+        if(filePath.equals("default")){
+        	System.out.println("You are now using the relative directory");
+        	filePath = "";
+        }else{
+        	System.out.println("You have entered a Directory Path");
+        	filePath += "\\";
+        }
+        String userInput;
+        for(;;){
+        	System.out.println("Verbose(Y/N)?");
+        	userInput = in.nextLine();
+        	if(userInput.equals("Y")){
+        		verbose = true;
+        		System.out.println("You have chosen Verbose mode");
+        		break;
+        	}else if(userInput.equals("N")){
+        		verbose = false;
+        		System.out.println("You have chosen Quiet mode");
+        		break;
+        	}
+        }
+        in.close();
         //Start the main program
         TFTPServer c = new TFTPServer();
         //Loop forever
