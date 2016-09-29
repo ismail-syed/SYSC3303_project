@@ -1,5 +1,6 @@
 package TFTP;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -58,16 +59,23 @@ public class TFTPServer {
     public static void main(String args[]) throws Exception {
         //Requests the user to input a filepath for the directory you want to work with
         Scanner in = new Scanner(System.in);
-        System.out.println("Enter the Directory Path: default/path");
-        System.out.println("default - type \"default\" to the relative director OR");
-        System.out.println("Enter the filepath of the directory");
-        filePath = in.nextLine();
-        if(filePath.equals("default")){
-        	System.out.println("You are now using the relative directory");
-        	filePath = "";
-        }else{
-        	System.out.println("You have entered a Directory Path");
-        	filePath += "\\";
+        System.out.println("Enter the Directory Path:");
+        System.out.println("Type \"DEFAULT\" to use the relative director or Enter the filepath of the directory");
+        for(;;){
+        	filePath = in.nextLine();
+        	if(filePath.equals("DEFAULT")){
+        		System.out.println("You are now using the relative directory");
+        		filePath = "";
+        		break;
+        	}else{
+        		if(new File (filePath).isDirectory()){
+        			filePath += "\\";
+        			System.out.println("You have entered a valid Directory Path");
+        			break;
+        		}else{
+        			System.out.println("Invalid Directory\nPlease Try Again.");
+        		}
+        	}
         }
         String userInput;
         for(;;){
