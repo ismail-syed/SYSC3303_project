@@ -166,12 +166,6 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     @Override
-    //TODO: Add ackPacket check: DONE
-    //TODO: quitting Aritra
-    //TODO: Verbose Quiet: DONE
-    //TODO: Max block number check: DONE
-    //TODO: Add timeout Aritra: DONE
-    //TODO: relative directory default: DONE
     public void run() {
         while (!transferFinished) {
             sendAndReceive();
