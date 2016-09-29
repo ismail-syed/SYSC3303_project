@@ -116,14 +116,15 @@ public class TFTPServerTransferThread implements Runnable {
                 System.out.println("Opcode: ACK");
                 //Parse ACK packet
                 ACKPacket ackPacket = new ACKPacket(data);
-                if(ackPacket.getBlockNumber() != previousBlockNumber + 1){
+                if(ackPacket.getBlockNumber() != previousBlockNumber){
                 	throw new InvalidBlockNumberException("Data is out of order");
                 }
+                previousBlockNumber = ackPacket.getBlockNumber()+1;
                 //Send next block of file until there are no more blocks
                 if (ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()) {
-                    tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
+                    tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(previousBlockNumber));
                 }
-                System.out.println("Sending DATA with block " + (ackPacket.getBlockNumber() + 1));
+                System.out.println("Sending DATA with block " + (previousBlockNumber));
 
                 if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
                     //transfer finished for RRQ;
