@@ -1,14 +1,12 @@
 package TFTP;
 
-import FileIO.TFTPReader;
-import FileIO.TFTPWriter;
-import TFTPPackets.*;
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.Scanner;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
-import static TFTPPackets.TFTPPacket.*;
+import static TFTPPackets.TFTPPacket.MAX_SIZE;
 
 /**
  * The {@link TFTP.TFTPServer} class represents a TFTP Server
@@ -38,8 +36,6 @@ public class TFTPServer {
         }
     }
 
-    private TFTPReader tftpReader;
-    private TFTPWriter tftpWriter;
 
     /**
      * This method sends or receives files from the client
@@ -48,73 +44,14 @@ public class TFTPServer {
      */
     private void receivePacketFromClient() {
         byte dataBuffer[] = new byte[MAX_SIZE];
-        byte[] data;
-        try {
-            sendSocket = new DatagramSocket();
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
         receivePacket = new DatagramPacket(dataBuffer, dataBuffer.length);
         try {
-            //Receive packet
             receiveSocket.receive(receivePacket);
-            //Create byte array of proper size
-            data = new byte[receivePacket.getLength()];
-            System.arraycopy(dataBuffer, 0, data, 0, data.length);
-
-            //Process the received datagram.
-            System.out.println("Server: Packet received:");
-            System.out.println("From host: " + receivePacket.getAddress());
-            System.out.println("Host port: " + receivePacket.getPort());
-            int len = receivePacket.getLength();
-            System.out.println("Length: " + len);
-            System.out.println("Containing: ");
-
-            //Get opcode
-            Opcode opcode = Opcode.asEnum((int) data[1]);
-            //Initialize the TFTPPacket that will hold the response going to the client
-            TFTPPacket tftpPacket = new TFTPPacket();
-
-            if (opcode == Opcode.READ) {
-                System.out.println("Opcode: READ");
-                //Parse RRQ packet
-                RRQPacket rrqPacket = new RRQPacket(data);
-                //Read from File
-                tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
-                //Create DATA packet with first block of file
-                tftpPacket = new DataPacket(1, tftpReader.getFileBlock(1));
-            } else if (opcode == Opcode.WRITE) {
-                System.out.println("Opcode: WRITE");
-                //Parse WRQ packet
-                WRQPacket wrqPacket = new WRQPacket(data);
-                //Open file
-                tftpWriter = new TFTPWriter(new File(filePath + wrqPacket.getFilename()).getPath(), false);
-                //Create ACK packet with block number 0
-                tftpPacket = new ACKPacket(0);
-            } else if (opcode == Opcode.DATA) {
-                System.out.println("Opcode: DATA");
-                //Parse DATA packet
-                DataPacket dataPacket = new DataPacket(data);
-                //Write the data from the DATA packet
-                tftpWriter.writeToFile(dataPacket.getData());
-                //Create an ACK packet for corresponding block number
-                tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-            } else if (opcode == Opcode.ACK) {
-                System.out.println("Opcode: ACK");
-                //Parse ACK packet
-                ACKPacket ackPacket = new ACKPacket(data);
-                //Send next block of file until there are no more blocks
-                if (ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()) {
-                    tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
-                }
-            }
-            //Send packet to client
-            sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
-                    receivePacket.getAddress(), receivePacket.getPort());
-            sendSocket.send(sendPacket);
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
+        Thread fileTransferThread = new Thread(new TFTPServerTransferThread(receivePacket, filePath));
+        fileTransferThread.start();
     }
 
     public static void main(String args[]) throws Exception {
