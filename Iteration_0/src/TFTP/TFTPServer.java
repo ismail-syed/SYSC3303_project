@@ -67,16 +67,16 @@ public class TFTPServer implements Runnable {
         System.out.println("Enter the Directory Path:");
         System.out.println("Type \"DEFAULT\" to use the relative director or Enter the filepath of the directory");
         for(;;){
-            filePath = in.nextLine();
-            if(filePath.equals("DEFAULT")){
+            String userInput = in.nextLine();
+            if(userInput.equals("DEFAULT")){
                 //if default print the dir and finish
-                System.out.println("You are now in: " + System.getProperty("user.dir"));
-                filePath = "";
+                System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Server");
+                filePath = System.getProperty("user.dir") + "\\Server" + "\\";
                 break;
             }else{
                 if(new File (filePath).isDirectory()){
                     //is the path was provided finish
-                    filePath += "\\";
+                    filePath = userInput + "\\";
                     System.out.println("You have entered a valid Directory Path\n");
                     break;
                 }else{
