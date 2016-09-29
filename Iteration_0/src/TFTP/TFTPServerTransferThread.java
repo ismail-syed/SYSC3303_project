@@ -1,5 +1,6 @@
 package TFTP;
 
+import java.net.SocketTimeoutException;
 import java.util.*;
 
 import Exceptions.InvalidBlockNumberException;
@@ -46,6 +47,8 @@ public class TFTPServerTransferThread implements Runnable {
         this.verbose = verbose;
         try {
             sendReceiveSocket = new DatagramSocket();
+			//set a timeout of 10s
+            sendReceiveSocket.setSoTimeout(10000);
         } catch (SocketException e) {
             e.printStackTrace();
         }
@@ -133,12 +136,6 @@ public class TFTPServerTransferThread implements Runnable {
                 }
             }
 
-            try {
-                sendReceiveSocket = new DatagramSocket();
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
-
             if (!transferFinished) {
                 sendPacketToClient(tftpPacket);
             }
@@ -173,7 +170,7 @@ public class TFTPServerTransferThread implements Runnable {
     //TODO: quitting Aritra
     //TODO: Verbose Quiet: DONE
     //TODO: Max block number check: DONE
-    //TODO: Add timeout Aritra
+    //TODO: Add timeout Aritra: DONE
     //TODO: relative directory default: DONE
     public void run() {
         while (!transferFinished) {
@@ -184,9 +181,20 @@ public class TFTPServerTransferThread implements Runnable {
                     packetFromClient = new DatagramPacket(dataBuffer, dataBuffer.length);
                     sendReceiveSocket.receive(packetFromClient);
                 }
-            } catch (IOException e) {
+            }
+            catch (SocketTimeoutException e) {
+                if(verbose){
+                    System.out.println("Client took too long to respond");
+                }
+                transferFinished = true;
+            }
+            catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        if(verbose){
+            System.out.println("Closing socket");
+        }
+        sendReceiveSocket.close();
     }
 }
