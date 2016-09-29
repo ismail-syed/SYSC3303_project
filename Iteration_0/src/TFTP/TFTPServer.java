@@ -59,26 +59,31 @@ public class TFTPServer {
     public static void main(String args[]) throws Exception {
         //Requests the user to input a filepath for the directory you want to work with
         Scanner in = new Scanner(System.in);
+        //request the user for a path
         System.out.println("Enter the Directory Path:");
         System.out.println("Type \"DEFAULT\" to use the relative director or Enter the filepath of the directory");
         for(;;){
         	filePath = in.nextLine();
         	if(filePath.equals("DEFAULT")){
+        		//if default print the dir and finish
         		System.out.println("You are now in: " + System.getProperty("user.dir"));
         		filePath = "";
         		break;
         	}else{
         		if(new File (filePath).isDirectory()){
+        			//is the path was provided finish
         			filePath += "\\";
         			System.out.println("You have entered a valid Directory Path\n");
         			break;
         		}else{
+        			//if the directory does not exist, ask for an input again
         			System.out.println("Invalid Directory\nPlease Try Again.");
         		}
         	}
         }
         String userInput;
         for(;;){
+        	//request user for verbose or quiet mode
         	System.out.println("Verbose(Y/N)?");
         	userInput = in.nextLine();
         	if(userInput.equals("Y")){
@@ -89,7 +94,7 @@ public class TFTPServer {
         		verbose = false;
         		System.out.println("You have chosen Quiet mode");
         		break;
-        	}
+        	}//if input is invalid, ask again
         }
         in.close();
         //Start the main program
