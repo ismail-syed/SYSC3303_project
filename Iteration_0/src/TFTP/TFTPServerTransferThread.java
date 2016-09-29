@@ -1,5 +1,8 @@
 package TFTP;
 
+import java.util.*;
+
+import Exceptions.InvalidBlockNumberException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
 import TFTPPackets.*;
@@ -26,6 +29,8 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
 public class TFTPServerTransferThread implements Runnable {
 
     private String filePath;
+    private boolean verbose;
+    private int previousBlockNumber;
     private Boolean transferFinished = false;
     private DatagramPacket sendPacket;
     private DatagramPacket packetFromClient;
@@ -35,9 +40,10 @@ public class TFTPServerTransferThread implements Runnable {
 
     private byte dataBuffer[] = new byte[MAX_SIZE];
 
-    public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath) {
+    public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath, boolean verbose) {
         this.packetFromClient = packetFromClient;
         this.filePath = filePath;
+        this.verbose = verbose;
         try {
             sendReceiveSocket = new DatagramSocket();
         } catch (SocketException e) {
@@ -53,12 +59,15 @@ public class TFTPServerTransferThread implements Runnable {
 
             //Process the received datagram.
             System.out.println("\nServer: Packet received:");
-            System.out.println("From host: " + packetFromClient.getAddress());
-            System.out.println("Host port: " + packetFromClient.getPort());
-            int len = packetFromClient.getLength();
-            System.out.println("Length: " + len);
-            System.out.println("Containing: ");
-
+            if(verbose){
+            	System.out.println("From host: " + packetFromClient.getAddress());
+            	System.out.println("Host port: " + packetFromClient.getPort());
+            	int len = packetFromClient.getLength();
+            	System.out.println("Length: " + len);
+            	System.out.println("Containing: ");
+            	System.out.println(new String(Arrays.copyOfRange(data,0,len)));
+            	System.out.println("Byte Array: " + Arrays.toString(Arrays.copyOfRange(data,0,len))+"\n");
+            }
             //Get opcode
             TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
             //Initialize the TFTPPacket that will hold the response going to the client
@@ -73,6 +82,7 @@ public class TFTPServerTransferThread implements Runnable {
                 //Create DATA packet with first block of file
                 System.out.println("Sending block 1");
                 tftpPacket = new DataPacket(1, tftpReader.getFileBlock(1));
+                previousBlockNumber = 1;
             } else if (opcode == TFTPPacket.Opcode.WRITE) {
                 System.out.println("Opcode: WRITE");
                 //Parse WRQ packet
@@ -82,15 +92,20 @@ public class TFTPServerTransferThread implements Runnable {
                 //Create ACK packet with block number 0
                 System.out.println("Sending ACK with block 0");
                 tftpPacket = new ACKPacket(0);
+                previousBlockNumber = 0;
             } else if (opcode == TFTPPacket.Opcode.DATA) {
                 System.out.println("Opcode: DATA");
                 //Parse DATA packet
                 DataPacket dataPacket = new DataPacket(data);
                 //Write the data from the DATA packet
+                if(dataPacket.getBlockNumber() != previousBlockNumber + 1){
+                	throw new InvalidBlockNumberException("Data is out of order");
+                }
                 tftpWriter.writeToFile(dataPacket.getData());
+                previousBlockNumber = dataPacket.getBlockNumber();
                 //Create an ACK packet for corresponding block number
-                tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-                System.out.println("Sending ACK with block " + dataPacket.getBlockNumber());
+                tftpPacket = new ACKPacket(previousBlockNumber);
+                System.out.println("Sending ACK with block " + previousBlockNumber);
                 if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
                     //transfer finished for WRQ
                     sendPacketToClient(tftpPacket);
@@ -101,6 +116,9 @@ public class TFTPServerTransferThread implements Runnable {
                 System.out.println("Opcode: ACK");
                 //Parse ACK packet
                 ACKPacket ackPacket = new ACKPacket(data);
+                if(ackPacket.getBlockNumber() != previousBlockNumber + 1){
+                	throw new InvalidBlockNumberException("Data is out of order");
+                }
                 //Send next block of file until there are no more blocks
                 if (ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()) {
                     tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
@@ -133,6 +151,15 @@ public class TFTPServerTransferThread implements Runnable {
         //Send packet to client
         sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
                 packetFromClient.getAddress(), packetFromClient.getPort());
+        //printing out information about the packet
+        System.out.println( "Server: Sending packet");
+        if(verbose){
+        	System.out.println("To host: " + sendPacket.getAddress());
+        	System.out.println("Destination host port: " + sendPacket.getPort());
+        	int length = sendPacket.getLength();
+        	System.out.println("Length: " + length);
+        	System.out.println("Byte Array: " + Arrays.toString(sendPacket.getData()));
+        }
         try {
             sendReceiveSocket.send(sendPacket);
         } catch (IOException e) {
@@ -141,12 +168,12 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     @Override
-    //TODO: Add ackPacket check Aritra/Shasthra
+    //TODO: Add ackPacket check: DONE
     //TODO: quitting Aritra
-    //TODO: Verbose Quiet Shasthra
-    //TODO: Max block number check Shasthra
+    //TODO: Verbose Quiet: DONE
+    //TODO: Max block number check: DONE
     //TODO: Add timeout Aritra
-    //TODO: relative directory default Shasthra
+    //TODO: relative directory default: DONE
     public void run() {
         while (!transferFinished) {
             sendAndReceive();
