@@ -64,13 +64,13 @@ public class TFTPServer {
         for(;;){
         	filePath = in.nextLine();
         	if(filePath.equals("DEFAULT")){
-        		System.out.println("You are now using the relative directory");
+        		System.out.println("You are now in: " + System.getProperty("user.dir"));
         		filePath = "";
         		break;
         	}else{
         		if(new File (filePath).isDirectory()){
         			filePath += "\\";
-        			System.out.println("You have entered a valid Directory Path");
+        			System.out.println("You have entered a valid Directory Path\n");
         			break;
         		}else{
         			System.out.println("Invalid Directory\nPlease Try Again.");

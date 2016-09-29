@@ -125,7 +125,7 @@ public class TFTPServerTransferThread implements Runnable {
                 previousBlockNumber = ackPacket.getBlockNumber()+1;
                 //Send next block of file until there are no more blocks
                 if (ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()) {
-                    tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(previousBlockNumber));
+                    tftpPacket = new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber));
                 }
                 System.out.println("Sending DATA with block " + (previousBlockNumber));
 
