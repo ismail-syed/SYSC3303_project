@@ -22,8 +22,8 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
 
 public class TFTPServer implements Runnable {
     // UDP datagram packets and sockets used to send / receive
-    private DatagramPacket sendPacket, receivePacket;
-    private DatagramSocket receiveSocket, sendSocket;
+    private DatagramPacket receivePacket;
+    private DatagramSocket receiveSocket;
     private static String filePath;
     private static boolean verbose;
     private static volatile boolean acceptingNewConnections;
@@ -74,7 +74,7 @@ public class TFTPServer implements Runnable {
                 filePath = System.getProperty("user.dir") + "\\Server" + "\\";
                 break;
             }else{
-                if(new File (filePath).isDirectory()){
+                if(new File (userInput).isDirectory()){
                     //is the path was provided finish
                     filePath = userInput + "\\";
                     System.out.println("You have entered a valid Directory Path\n");
