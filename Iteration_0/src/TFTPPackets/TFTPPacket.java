@@ -35,7 +35,7 @@ public class TFTPPacket {
      * Initialize the packetByteArrayOutputStream to get ready to write to it
      *
      */
-    TFTPPacket() {
+    public TFTPPacket() {
         packetByteArrayOutputStream = new ByteArrayOutputStream();
     }
 

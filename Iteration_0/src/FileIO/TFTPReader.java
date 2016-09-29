@@ -13,6 +13,7 @@ import java.util.*;
  *
  * @author Team 3000000
  * @author Aritra Sengupta
+ * @author Shasthra Ranasinghe
  * @version 1.0
  */
 public class TFTPReader {
@@ -25,6 +26,10 @@ public class TFTPReader {
      */
     private static final int MAX_BLOCK_SIZE = 512;
     /**
+     * The max number of blocks in the file
+     */
+    private static final int MAX_BLOCK_NUMBER = Short.MAX_VALUE * 2 + 1; //65535
+    /**
      * The total number of blocks in the file
      */
     private int numberOfBlocks;
@@ -35,14 +40,18 @@ public class TFTPReader {
      * Creates a new {@link TFTPReader} with the specified file path
      *
      * @param filePath specifies the path to the file to read
+     * @throws MaxBlockNumberException 
      * @since 1.0
      */
-    public TFTPReader(String filePath) {
+    public TFTPReader(String filePath){
         try {
             //read the whole file into memory
             byte[] fileAsByteArray = Files.readAllBytes(new File(filePath).toPath());
             //Calculate the number of blocks from the file
             this.numberOfBlocks = (fileAsByteArray.length / MAX_BLOCK_SIZE);
+            if(numberOfBlocks > MAX_BLOCK_NUMBER){
+            	throw new InvalidBlockNumberException("Block number must be between 0 and " + Integer.toString(MAX_BLOCK_NUMBER));
+            }
             for (int i = 0; i <= numberOfBlocks; i++) {
                 if (i == numberOfBlocks) {
                     //if last block then read to the end of file
@@ -52,7 +61,7 @@ public class TFTPReader {
                     blocksFromFile.put(i + 1, Arrays.copyOfRange(fileAsByteArray, i * MAX_BLOCK_SIZE, (i * MAX_BLOCK_SIZE) + MAX_BLOCK_SIZE));
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException| InvalidBlockNumberException e) {
             e.printStackTrace();
         }
     }
