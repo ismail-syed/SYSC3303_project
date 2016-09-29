@@ -30,8 +30,8 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
 public class TFTPServerTransferThread implements Runnable {
 
     private String filePath;
-    private boolean verbose;
-    private int previousBlockNumber;
+    private boolean verbose; //verbose or quiet
+    private int previousBlockNumber; // keeps track of the block numbers to ensure blocks received are in order
     private Boolean transferFinished = false;
     private DatagramPacket sendPacket;
     private DatagramPacket packetFromClient;
