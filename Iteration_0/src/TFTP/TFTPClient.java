@@ -90,10 +90,9 @@ public void sendRequest(Scanner sc) throws PacketOverflowException, FileNotFound
 		 System.out.println("Client: creating RRQ packet.");
 		 	
 		     // next we have a file name -- let's just pick one
-		 	Scanner fileN = new Scanner(System.in);
 		 	System.out.println("Enter file name");
-		 	filename = fileN.nextLine();
-		 	fileN.close();
+		 	filename = sc.nextLine();
+		 	
 		 	
 		 	packet = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 		 	data = packet.getByteArray();
