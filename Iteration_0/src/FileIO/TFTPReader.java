@@ -40,7 +40,6 @@ public class TFTPReader {
      * Creates a new {@link TFTPReader} with the specified file path
      *
      * @param filePath specifies the path to the file to read
-     * @throws MaxBlockNumberException 
      * @since 1.0
      */
     public TFTPReader(String filePath){
