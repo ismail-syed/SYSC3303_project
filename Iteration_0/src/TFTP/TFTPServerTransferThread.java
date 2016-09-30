@@ -126,12 +126,11 @@ public class TFTPServerTransferThread implements Runnable {
                 //Send next block of file until there are no more blocks
                 if (ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()) {
                     tftpPacket = new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber));
+                    System.out.println("Sending DATA with block " + (previousBlockNumber));
                 }
-                System.out.println("Sending DATA with block " + (previousBlockNumber));
-
-                if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
+                if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks() || tftpReader.getNumberOfBlocks() == 0) {
                     //transfer finished for RRQ;
-                    sendPacketToClient(tftpPacket);
+                	if(tftpReader.getNumberOfBlocks() != 0) sendPacketToClient(tftpPacket);
                     transferFinished = true;
                 }
             }
