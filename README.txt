@@ -19,6 +19,10 @@ Mohamed Zalat:
 
 Shasthra Ranasinghe:
 - Server side implementation
+- Writing the DataPacket, Reader and Write classes
+- Implementing steady-state file transfer from the server
+- Implementing threading on the server
+- Modifying the simulator to work with DATA and ACK packets
 
 Aritra Sengupta:
 - Writing the Exceptions, FileIO and TFTPPackets packages
