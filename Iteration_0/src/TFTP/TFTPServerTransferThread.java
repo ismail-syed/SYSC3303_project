@@ -69,7 +69,7 @@ public class TFTPServerTransferThread implements Runnable {
             	System.out.println("Length: " + len);
             	System.out.println("Containing: ");
             	System.out.println(new String(Arrays.copyOfRange(data,0,len)));
-            	System.out.println("Byte Array: " + Arrays.toString(Arrays.copyOfRange(data,0,len))+"\n");
+            	System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,len))+"\n");
             }
             //Get opcode
             TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
@@ -155,7 +155,7 @@ public class TFTPServerTransferThread implements Runnable {
         	System.out.println("Destination host port: " + sendPacket.getPort());
         	int length = sendPacket.getLength();
         	System.out.println("Length: " + length);
-        	System.out.println("Byte Array: " + Arrays.toString(sendPacket.getData()));
+        	System.out.println("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
         }
         try {
             sendReceiveSocket.send(sendPacket);

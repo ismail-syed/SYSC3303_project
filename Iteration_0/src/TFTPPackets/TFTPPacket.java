@@ -46,18 +46,17 @@ public class TFTPPacket {
      * @return string representation of the TFTP packet
      * @since 1.0
      */
-    public static String toString(DataPacket ackPacket) {
-        byte[] ackPacketAsByteArray = ackPacket.getByteArray();
-        if (ackPacketAsByteArray == null)
+    public static String toString(byte[] data) {
+        if (data == null)
             return "null";
-        int iMax = ackPacketAsByteArray.length - 1;
+        int iMax = data.length - 1;
         if (iMax == -1)
             return "[]";
         StringBuilder b = new StringBuilder();
         b.append('[');
         for (int i = 0; ; i++) {
             //Convert to unsigned byte
-            b.append(ackPacketAsByteArray[i] & 0xFF);
+            b.append(data[i] & 0xFF);
             if (i == iMax)
                 return b.append(']').toString();
             b.append(", ");

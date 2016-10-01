@@ -186,7 +186,7 @@ private void sendReceivePacket(Scanner sc){
         	System.out.println("Length: " + len);
         	System.out.println("Containing: ");
         	System.out.println(new String(Arrays.copyOfRange(data,0,len)));
-        	System.out.println("Byte Array: " + Arrays.toString(Arrays.copyOfRange(data,0,len))+"\n");
+        	System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,len))+"\n");
         }
 
         //Get opcode
@@ -204,20 +204,20 @@ private void sendReceivePacket(Scanner sc){
             //create an ack packet from corresponding block number
             ACKPacket ackPacket = new ACKPacket(dataPacket.getBlockNumber());
             //create and send ack packet
-            if(run == Mode.NORMAL)
-            sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
-            receivePacket.getAddress(), receivePacket.getPort());
-            else
+            if(run == Mode.NORMAL){
+            	sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
+            			receivePacket.getAddress(), receivePacket.getPort());
+            }else{
             	sendPacket = new DatagramPacket(ackPacket.getByteArray(), ackPacket.getByteArray().length,
                         receivePacket.getAddress(), testModeSendPort);
-            
+            }
             if(verbose){
             	System.out.println("Client: Sending packet");
             	System.out.println("To host: " + sendPacket.getAddress());
             	System.out.println("Destination host port: " + sendPacket.getPort());
             	int length = sendPacket.getLength();
             	System.out.println("Length: " + length);
-            	System.out.println("Byte Array: " + Arrays.toString(sendPacket.getData()));
+            	System.out.println("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
             }
             
             sendReceiveSocket.send(sendPacket);
@@ -236,19 +236,20 @@ private void sendReceivePacket(Scanner sc){
             if(ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()){
                 DataPacket dataPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
                 
-                if(run == Mode.NORMAL)
+                if(run == Mode.NORMAL){
                 	sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
                 			receivePacket.getAddress(), receivePacket.getPort());
-                else
+                }else{
                 	sendPacket = new DatagramPacket(dataPacket.getByteArray(), dataPacket.getByteArray().length,
                             receivePacket.getAddress(), testModeSendPort);
+                }
                 if(verbose){
                 	System.out.println("Client: Sending packet");
                 	System.out.println("To host: " + sendPacket.getAddress());
                 	System.out.println("Destination host port: " + sendPacket.getPort());
                 	int length = sendPacket.getLength();
                 	System.out.println("Length: " + length);
-                	System.out.println("Byte Array: " + Arrays.toString(sendPacket.getData()));
+                	System.out.println("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
                 }
                 
                 try{
