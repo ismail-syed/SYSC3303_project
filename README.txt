@@ -63,8 +63,9 @@ TFTPPackets:
 - TFTPPacket.java
 - WRQPacket.java
 
-UMLClassDiagram.png
-
+- Iteration1_UML_Class_diagrams.png
+- UCM_read_file_transfer.png
+- UCM_write_file_tansfer.png
 
 ========================================================================
 SET UP INSTRUCTIONS: 
