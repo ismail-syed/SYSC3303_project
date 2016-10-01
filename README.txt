@@ -56,6 +56,8 @@ TFTPPackets:
 - TFTPPacket.java
 - WRQPacket.java
 
+UMLClassDiagram.png
+
 
 ========================================================================
 SET UP INSTRUCTIONS: 
