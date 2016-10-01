@@ -257,12 +257,13 @@ private void sendReceivePacket(Scanner sc){
                     e.printStackTrace();
                 }
             }
-            else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()){
+            else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks() + 1){
             	firstTime = true;
             	System.out.println("file received.");
             }
         }
     } catch (Exception e) {
+        System.exit(0);
         e.printStackTrace();
     }
 }
@@ -271,7 +272,7 @@ public static void main(String args[])
 {
 	Scanner in = new Scanner(System.in);
 	System.out.println("Enter the Directory Path:");
-    System.out.println("Type \"DEFAULT\" to use the relative director or Enter the filepath of the directory");
+    System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
     
     for(;;){
         String userInput = in.nextLine();
