@@ -21,7 +21,10 @@ Shasthra Ranasinghe:
 - Server side implementation
 
 Aritra Sengupta:
-- Server side implementation
+- Writing the Exceptions, FileIO and TFTPPackets packages
+- Implementing steady-state file transfer from the server
+- Implementing threading on the server
+- Git integration
 
 Ismail Syed:
 - Project management and coordination
