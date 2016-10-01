@@ -1,5 +1,14 @@
 package TFTP;
 
+
+/**
+ * The {@link TFTP.TFTPSim} class represents a TFTP Error Simiulator
+ * (based on Assignment 1 solution)
+ *
+ * @author Team 3000000
+ * @author Shasthra Ranasinghe
+ * @version 1.0
+ */
 //TFTPSim.java
 //This class is the beginnings of an error simulator for a simple TFTP server 
 //based on UDP/IP. The simulator receives a read or write packet from a client and
@@ -12,11 +21,15 @@ import java.io.*;
 import java.net.*; 
 import java.util.*;
 
+import TFTPPackets.TFTPPacket;
+
 public class TFTPSim {
 
 // UDP datagram packets and sockets used to send / receive
 private DatagramPacket sendPacket, receivePacket;
 private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
+private int serverPort = 69;
+private int requestOpCode;//used to distinguish between read and write
 
 public TFTPSim()
 {
@@ -40,13 +53,13 @@ public void passOnTFTP()
 
    byte[] data;
    
-   int clientPort, j=0, len;
+   int clientPort, j=0, fromServerLen,fromClientLen,endOfWriteDataSize;
 
    for(;;) { // loop forever
       // Construct a DatagramPacket for receiving packets up
-      // to 100 bytes long (the length of the byte array).
+      // to 516 bytes long (the length of the byte array).
       
-      data = new byte[100];
+      data = new byte[516];
       receivePacket = new DatagramPacket(data, data.length);
 
       System.out.println("Simulator: Waiting for packet.");
@@ -57,23 +70,28 @@ public void passOnTFTP()
          e.printStackTrace();
          System.exit(1);
       }
+      
+      if(data[1]==(byte)1) requestOpCode = 1;
+      if(data[1]==(byte)2) requestOpCode = 2;
 
       // Process the received datagram.
       System.out.println("Simulator: Packet received:");
       System.out.println("From host: " + receivePacket.getAddress());
       clientPort = receivePacket.getPort();
       System.out.println("Host port: " + clientPort);
-      len = receivePacket.getLength();
-      System.out.println("Length: " + len);
-      System.out.println("Containing: " );
-      
-      // print the bytes
-      for (j=0;j<len;j++) {
-         System.out.println("byte " + j + " " + data[j]);
+      //if its a data block save to size to check later
+      if(data[1]==(byte)3){
+    	  endOfWriteDataSize = receivePacket.getLength();
+      }else{
+    	  endOfWriteDataSize = 516;
       }
+      fromClientLen = receivePacket.getLength();
+      System.out.println("Length: " + fromClientLen);
+      System.out.println("Containing: " );
+      System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,fromClientLen))+"\n");
 
       // Form a String from the byte array, and print the string.
-      String received = new String(data,0,len);
+      String received = new String(data,0,fromClientLen);
       System.out.println(received);
       
       // Now pass it on to the server (to port 69)
@@ -90,18 +108,16 @@ public void passOnTFTP()
       //     address of the local host.
       //  69 - the destination port number on the destination host.
 
-      sendPacket = new DatagramPacket(data, len,
-                                     receivePacket.getAddress(), 69);
+      sendPacket = new DatagramPacket(data, fromClientLen,
+                                     receivePacket.getAddress(), serverPort);
      
       System.out.println("Simulator: sending packet.");
       System.out.println("To host: " + sendPacket.getAddress());
       System.out.println("Destination host port: " + sendPacket.getPort());
-      len = sendPacket.getLength();
-      System.out.println("Length: " + len);
+      //fromClientLen = sendPacket.getLength();
+      System.out.println("Length: " + fromClientLen);
       System.out.println("Containing: ");
-      for (j=0;j<len;j++) {
-          System.out.println("byte " + j + " " + data[j]);
-      }
+      System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,fromClientLen))+"\n");
 
       // Send the datagram packet to the server via the send/receive socket.
 
@@ -113,9 +129,9 @@ public void passOnTFTP()
       }
       
       // Construct a DatagramPacket for receiving packets up
-      // to 100 bytes long (the length of the byte array).
+      // to 516 bytes long (the length of the byte array).
 
-      data = new byte[100];
+      data = new byte[516];
       receivePacket = new DatagramPacket(data, data.length);
 
       System.out.println("Simulator: Waiting for packet.");
@@ -130,13 +146,12 @@ public void passOnTFTP()
       // Process the received datagram.
       System.out.println("Simulator: Packet received:");
       System.out.println("From host: " + receivePacket.getAddress());
-      System.out.println("Host port: " + receivePacket.getPort());
-      len = receivePacket.getLength();
-      System.out.println("Length: " + len);
+      serverPort = receivePacket.getPort();
+      System.out.println("Host port: " + serverPort);
+      fromServerLen = receivePacket.getLength();
+      System.out.println("Length: " + fromServerLen);
       System.out.println("Containing: ");
-      for (j=0;j<len;j++) {
-         System.out.println("byte " + j + " " + data[j]);
-      }
+      System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,fromServerLen))+"\n");
 
       // Construct a datagram packet that is to be sent to a specified port
       // on a specified host.
@@ -162,12 +177,10 @@ public void passOnTFTP()
       System.out.println( "Simulator: Sending packet:");
       System.out.println("To host: " + sendPacket.getAddress());
       System.out.println("Destination host port: " + sendPacket.getPort());
-      len = sendPacket.getLength();
-      System.out.println("Length: " + len);
+      //fromServerLen = sendPacket.getLength();
+      System.out.println("Length: " + fromServerLen);
       System.out.println("Containing: ");
-      for (j=0;j<len;j++) {
-         System.out.println("byte " + j + " " + data[j]);
-      }
+      System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,fromServerLen))+"\n");
 
       // Send the datagram packet to the client via a new socket.
 
@@ -187,12 +200,40 @@ public void passOnTFTP()
          e.printStackTrace();
          System.exit(1);
       }
+      
+      //check if its the last data block
+      if(requestOpCode == 1 && fromServerLen<516){
+    	  data = new byte[516];
+          receivePacket = new DatagramPacket(data, data.length);
+
+          System.out.println("Simulator: Waiting for packet.");
+          // Block until a datagram packet is received from receiveSocket.
+          try {
+             receiveSocket.receive(receivePacket);
+          } catch (IOException e) {
+             e.printStackTrace();
+             System.exit(1);
+          }
+          System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,receivePacket.getLength()))+"\n");
+          
+          sendPacket = new DatagramPacket(data, receivePacket.getLength(),
+                  receivePacket.getAddress(), serverPort);
+          try {
+              sendReceiveSocket.send(sendPacket);
+           } catch (IOException e) {
+              e.printStackTrace();
+              System.exit(1);
+           }
+          System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,sendPacket.getLength()))+"\n");
+          serverPort = 69;
+      }
+      
+      //check if its the last data block
+      if(requestOpCode == 2 && endOfWriteDataSize<516) serverPort = 69;
 
       System.out.println("Simulator: packet sent using port " + sendSocket.getLocalPort());
       System.out.println();
 
-      // We're finished with this socket, so close it.
-      sendSocket.close();
    } // end of loop
 
 }
