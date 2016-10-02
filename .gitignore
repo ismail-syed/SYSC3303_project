@@ -15,3 +15,7 @@ Thumbs.db
 *.classpath
 *.project
 *.settings
+
+# IntelliJ IDEA related files
+.idea
+SYSC3303_TFTPServer.iml
