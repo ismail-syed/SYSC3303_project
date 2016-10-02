@@ -84,12 +84,12 @@ TEST INSTRUCTIONS:
 4) Run TFTPClient.java and follow the instructions.
 5) When making a read request the files available are:
 - Server_250.txt
-- Server_513.txt
+- Server_512.txt
 - Server_1000.txt
 - Server_90000.txt
 6) When making a write request the files available are:
 - Client_250.txt
-- Client_513.txt
+- Client_512.txt
 - Client_1000.txt
 - Client_90000.txt
 
