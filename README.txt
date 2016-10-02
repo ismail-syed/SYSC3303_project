@@ -11,11 +11,12 @@ Group Members:
 ========================================================================
 RESPONSIBILITIES: 
 
-Kunall Banerjee:
+Kunall Banerjee & Mohamed Zalat:
 - Client side implementation
-
-Mohamed Zalat:
-- Client side implementation
+- Client is able to read and write to files
+- Added verbose and quite mode
+- Added test and normal mode
+- Client also responds to data and acknowledgement packets appropriately
 
 Shasthra Ranasinghe:
 - Server side implementation
@@ -41,7 +42,7 @@ Ismail Syed:
 FILES:
 
 Exceptions:
-- InvalidBluckNumberException.java
+- InvalidBlockNumberException.java
 - MalformedPacketException.java
 - PacketOverflowException.java
 
