@@ -70,14 +70,30 @@ TFTPPackets:
 ========================================================================
 SET UP INSTRUCTIONS: 
 
-
-
+1) Create a blank Java eclipse project.
+2) Copy the submitted ./src directory files into the ./src directory of the newly created eclipse project.
+3) In the root path of the new Eclipse project, create a Client and Server Folder. These folders will be used for the 'DEFAULT' mode.
+4) Copy the "Client_#" and "Server_#" test files from the submitted test_files folder into the Client and Server directories created in Step 3 respectively.
 
 ========================================================================
 TEST INSTRUCTIONS: 
 
+1) Complete Set up instruction above.
+2) Run TFTPServer and follow the console instructions.
+3) Run FTFPSim.java.
+4) Run TFTPClient.java and follow the instructions.
+5) When making a read request the files available are:
+- Server_250.txt
+- Server_513.txt
+- Server_1000.txt
+- Server_90000.txt
+6) When making a write request the files available are:
+- Client_250.txt
+- Client_513.txt
+- Client_1000.txt
+- Client_90000.txt
 
-
-
-
+========================================================================
+Credits:
+- Assignment 1 Sample Solution from the Course Materials Page
 ========================================================================
