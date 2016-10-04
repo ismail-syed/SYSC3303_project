@@ -28,8 +28,7 @@ public class TFTPErrorPacket extends TFTPPacket {
      * @param msg
      */
     TFTPErrorPacket(ErrorType type, String msg) throws IllegalArgumentException {
-        // maybe throw the exception with a better msg?
-        if (type == null) throw new IllegalArgumentException("Error type missing in constructor call");
+        if (type == null) throw new IllegalArgumentException("Please specify an error type along with your message");
         this.type = type;
         this.msg = msg;
     }
