@@ -32,7 +32,6 @@ public class TFTPClient {
 	private static Mode run;
 	private static boolean firstTime;
 	private static boolean verbose;
-	private static final int testModeSendPort = 23;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -172,11 +171,7 @@ public class TFTPClient {
 					tftpWriter.writeToFile(dataPacket.getData());
 					//create an ack packet from corresponding block number
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-					if(run == Mode.NORMAL){
-						sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
-					}else{
-						sendPacketToServer(tftpPacket,receivePacket.getAddress(),testModeSendPort);
-					}
+					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 					if(dataPacket.getData().length < 512) {
 						System.out.println("\nComplete File Has Been Sent\n");
 						firstTime = true;
@@ -193,18 +188,14 @@ public class TFTPClient {
 				//send next block of file until there are no more blocks
 				if(ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()){
 					tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
-					if(run == Mode.NORMAL){
-						sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
-					}else{
-						sendPacketToServer(tftpPacket,receivePacket.getAddress(),testModeSendPort);
-					}
+					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks() + 1){
 					firstTime = true;
 					System.out.println("\nComplete File Has Been Received\n");
 				}
 			}else if(opcode == Opcode.ERROR){
 				//ERRORPacket errorPacket = new ERRORPacket(data);
-				//System.out.println("Error Code: " + errorPacket.getCode() + "\nError Message: " + errorPacket.getMessage());
+				//System.out.println("\nError Code: " + errorPacket.getCode() + "\nError Message: " + errorPacket.getMessage() + "\n");
 				firstTime = true;
 			}
 			
