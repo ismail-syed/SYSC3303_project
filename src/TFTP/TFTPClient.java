@@ -175,6 +175,7 @@ public class TFTPClient {
 					if(dataPacket.getData().length < 512) {
 						System.out.println("\nComplete File Has Been Sent\n");
 						firstTime = true;
+						tftpWriter.closeHandle();
 					}
 				}else{
 					System.out.println("\nError Code: 3\nError Message: Disk Full or Allocation Exceded\n");
