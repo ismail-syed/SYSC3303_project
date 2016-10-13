@@ -30,7 +30,7 @@ public class TFTPClient {
 	private TFTPReader tftpReader;
 	private TFTPWriter tftpWriter;
 	private static Mode run;
-	private boolean firstTime;
+	private static boolean firstTime;
 	private static boolean verbose;
 	private static final int testModeSendPort = 23;
 
@@ -84,7 +84,7 @@ public class TFTPClient {
 					filename = sc.nextLine();
 					if(new File (filePath + "\\" + filename).isFile()){
 						//is the path was provided finish
-						System.out.println("You have entered a valid file name\n");
+						System.out.println("You have entered a valid file name");
 						break;
 					}else{
 						//if the directory does not exist, ask for an input again
@@ -121,26 +121,14 @@ public class TFTPClient {
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		// Form a String from the byte array, and print the string.
-		System.out.println(new String(tftpPacket.getByteArray(),0,tftpPacket.getByteArray().length));
-
 		// Send the datagram packet to the server via the send/receive socket.
 		System.out.println("Client: Packet sent.");
 	}
 
-	private void sendReceivePacket(Scanner sc){
+	private void sendReceivePacket(){
 		byte dataBuffer[] = new byte[MAX_SIZE];
 		byte[] data = null;
 		TFTPPacket tftpPacket = new TFTPPacket();
-
-		if(firstTime){
-			try {
-				sendRequest(sc);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			firstTime = false;
-		}
 
 		receivePacket = new DatagramPacket(dataBuffer, dataBuffer.length);
 		try {
@@ -183,7 +171,7 @@ public class TFTPClient {
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),testModeSendPort);
 				}
 				if(dataPacket.getData().length < 512) {
-					System.out.println("Complete File Has Been Sent");
+					System.out.println("\nComplete File Has Been Sent\n");
 					firstTime = true;
 				}
 			}else if(opcode == Opcode.ACK){
@@ -201,7 +189,7 @@ public class TFTPClient {
 					}
 				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks() + 1){
 					firstTime = true;
-					System.out.println("Complete File Has Been Received");
+					System.out.println("\nComplete File Has Been Received\n");
 				}
 			}else if(opcode == Opcode.ERROR){
 				//ERRORPacket errorPacket = new ERRORPacket(data);
@@ -221,11 +209,12 @@ public class TFTPClient {
                 address, port);
         //printing out information about the packet
         if(verbose){
-        	System.out.println( "Client: Sending packet");
+        	System.out.println("\nClient: Sending packet");
         	System.out.println("To host: " + sendPacket.getAddress());
         	System.out.println("Destination host port: " + sendPacket.getPort());
         	int length = sendPacket.getLength();
         	System.out.println("Length: " + length);
+        	if(firstTime){System.out.println(new String(tftpPacket.getByteArray(),0,tftpPacket.getByteArray().length));}
         	System.out.println("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
         }
         try {
@@ -296,7 +285,8 @@ public class TFTPClient {
 
 		while(true) {
 			try {
-				c.sendReceivePacket(in);
+				if(firstTime){c.sendRequest(in); firstTime = false;}
+				c.sendReceivePacket();
 			} catch(Exception e) {
 				e.printStackTrace();
 				System.exit(1);
