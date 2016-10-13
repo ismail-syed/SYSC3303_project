@@ -72,10 +72,10 @@ public class TFTPClient {
 		}
 		boolean done = false;
 		while(!done){
-			System.out.println("Enter R for a read request, W for a write request and Q to quit");
+			System.out.println("Enter READ for a read request, WRITE for a write request and QUIT to quit");
 			String cmd = sc.nextLine();
 
-			if(cmd.equals("W")){
+			if(cmd.equals("WRITE")){
 				System.out.println("Client: creating WRQ packet.");
 
 				// next we have a file name
@@ -88,26 +88,32 @@ public class TFTPClient {
 						break;
 					}else{
 						//if the directory does not exist, ask for an input again
-						System.out.println("Invalid file name\nPlease Try Again.");
+						System.out.println("\nError Code: 1\nError Message: File Not Found\nPlease Try Again\n");
 					}
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				WRQPacket wPacket = (WRQPacket) tftpPacket;
-				tftpReader = new TFTPReader(new File(filePath + wPacket.getFilename()).getPath());
-			}else if(cmd.equals("R")) {
+				tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+			}else if(cmd.equals("READ")) {
 				System.out.println("Client: creating RRQ packet.");
 
-				// next we have a file name -- let's just pick one
-				System.out.println("Enter file name");
-				filename = sc.nextLine();
-
-
+				// next we have a file name
+				for(;;){
+					System.out.println("Enter file name");
+					filename = sc.nextLine();
+					if(!new File (filePath + "\\" + filename).isFile()){
+						//is the path was provided finish
+						System.out.println("You have entered a valid file name");
+						break;
+					}else{
+						//if the directory does not exist, ask for an input again
+						System.out.println("\nError Code: 6\nError Message: File Already Exists\nPlease Try Again\n");
+					}
+				}
 				tftpPacket = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				RRQPacket rPacket = (RRQPacket) tftpPacket;
-				tftpWriter = new TFTPWriter(new File(filePath + rPacket.getFilename()).getPath(),false);
-			}else if(cmd.equals("Q")) {
+				tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
+			}else if(cmd.equals("QUIT")) {
 				System.out.println("Client: Closing socket and exiting.");
 
 				// next we have a file name -- let's just pick one
@@ -161,17 +167,22 @@ public class TFTPClient {
 				}
 				//create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				//write the data you just received
-				tftpWriter.writeToFile(dataPacket.getData());
-				//create an ack packet from corresponding block number
-				tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-				if(run == Mode.NORMAL){
-					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
+				if(new File(filePath).getUsableSpace()>= dataPacket.getData().length){
+					//write the data you just received
+					tftpWriter.writeToFile(dataPacket.getData());
+					//create an ack packet from corresponding block number
+					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+					if(run == Mode.NORMAL){
+						sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
+					}else{
+						sendPacketToServer(tftpPacket,receivePacket.getAddress(),testModeSendPort);
+					}
+					if(dataPacket.getData().length < 512) {
+						System.out.println("\nComplete File Has Been Sent\n");
+						firstTime = true;
+					}
 				}else{
-					sendPacketToServer(tftpPacket,receivePacket.getAddress(),testModeSendPort);
-				}
-				if(dataPacket.getData().length < 512) {
-					System.out.println("\nComplete File Has Been Sent\n");
+					System.out.println("\nError Code: 3\nError Message: Disk Full or Allocation Exceded\n");
 					firstTime = true;
 				}
 			}else if(opcode == Opcode.ACK){
