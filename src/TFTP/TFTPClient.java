@@ -186,10 +186,10 @@ public class TFTPClient {
 				}
 				ACKPacket ackPacket = new ACKPacket(data);
 				//send next block of file until there are no more blocks
-				if(ackPacket.getBlockNumber() <= tftpReader.getNumberOfBlocks()){
+				if(ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()){
 					tftpPacket = new DataPacket(ackPacket.getBlockNumber() + 1, tftpReader.getFileBlock(ackPacket.getBlockNumber() + 1));
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
-				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks() + 1){
+				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()){
 					firstTime = true;
 					System.out.println("\nComplete File Has Been Received\n");
 				}
