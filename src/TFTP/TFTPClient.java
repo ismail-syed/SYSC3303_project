@@ -71,10 +71,10 @@ public class TFTPClient {
 		}
 		boolean done = false;
 		while(!done){
-			System.out.println("Enter READ for a read request, WRITE for a write request and QUIT to quit");
+			System.out.println("Choose Read or Write request(R/W) or enter \"QUIT\" to close the client");
 			String cmd = sc.nextLine();
 
-			if(cmd.equals("WRITE")){
+			if(cmd.equals("W")){
 				System.out.println("Client: creating WRQ packet.");
 
 				// next we have a file name
@@ -93,7 +93,7 @@ public class TFTPClient {
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
 				tftpReader = new TFTPReader(new File(filePath + filename).getPath());
-			}else if(cmd.equals("READ")) {
+			}else if(cmd.equals("R")) {
 				System.out.println("Client: creating RRQ packet.");
 
 				// next we have a file name
@@ -112,6 +112,29 @@ public class TFTPClient {
 				tftpPacket = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
 				tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
+			}else if(cmd.equals("cd")) {
+				System.out.println("Enter the Directory Path:");
+				System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
+
+				for(;;){
+					String userInput = sc.nextLine();
+					if(userInput.equals("DEFAULT")){
+						//if default print the dir and finish
+						System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
+						filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+						break;
+					}else{
+						if(new File (userInput).isDirectory()){
+							//if the path was provided finish
+							filePath = userInput + "\\";
+							System.out.println("You have entered a valid Directory Path\n");
+							break;
+						}else{
+							//if the directory does not exist, ask for an input again
+							System.out.println("Invalid Directory\nPlease Try Again.");
+						}
+					}
+				}
 			}else if(cmd.equals("QUIT")) {
 				System.out.println("Client: Closing socket and exiting.");
 
@@ -239,12 +262,13 @@ public class TFTPClient {
 				//if default print the dir and finish
 				System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
 				filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+				System.out.println("\nYou can change the directory at any point by typing \"cd\"\n");
 				break;
 			}else{
 				if(new File (userInput).isDirectory()){
 					//if the path was provided finish
 					filePath = userInput + "\\";
-					System.out.println("You have entered a valid Directory Path\n");
+					System.out.println("You have entered a valid Directory Path\nYou can change the directory at any point by typing \"cd\"\n");
 					break;
 				}else{
 					//if the directory does not exist, ask for an input again
