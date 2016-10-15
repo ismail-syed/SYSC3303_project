@@ -53,7 +53,7 @@ public void passOnTFTP()
 
    byte[] data;
    
-   int clientPort, j=0, fromServerLen,fromClientLen,endOfWriteDataSize;
+   int clientPort,  fromServerLen,fromClientLen,endOfWriteDataSize;
 
    for(;;) { // loop forever
       // Construct a DatagramPacket for receiving packets up
