@@ -30,7 +30,6 @@ public class TFTPWriter {
     public TFTPWriter(String filePath, boolean append) throws IOException {
         //create a file at filePath if file does not exist and append to it
         outputStream = new FileOutputStream(filePath, append);
-        outputStream.write(null);
     }
 
     /**
