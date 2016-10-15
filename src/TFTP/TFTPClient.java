@@ -12,6 +12,7 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
+import Exceptions.InvalidBlockNumberException;
 import Exceptions.PacketOverflowException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
@@ -110,7 +111,7 @@ public class TFTPClient {
 				done = true;
 				try {
 					tftpReader = new TFTPReader(new File(filePath + filename).getPath());
-				} catch (IOException e) {
+				} catch (IOException | InvalidBlockNumberException e) {
 					e.printStackTrace();
 				}
 			}else if(cmd.equals("R")) {//read request

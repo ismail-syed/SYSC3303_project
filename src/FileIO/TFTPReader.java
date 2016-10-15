@@ -36,10 +36,11 @@ public class TFTPReader {
      * Creates a new {@link TFTPReader} with the specified file path
      *
      * @param filePath specifies the path to the file to read
+     * @throws IOException 
+     * @throws InvalidBlockNumberException 
      * @since 1.0
      */
-    public TFTPReader(String filePath) throws IOException {
-        try {
+    public TFTPReader(String filePath) throws IOException, InvalidBlockNumberException{
             //read the whole file into memory
             byte[] fileAsByteArray = Files.readAllBytes(new File(filePath).toPath());
             //Calculate the number of blocks from the file
@@ -56,9 +57,6 @@ public class TFTPReader {
                     blocksFromFile.put(i + 1, Arrays.copyOfRange(fileAsByteArray, i * MAX_BLOCK_SIZE, (i * MAX_BLOCK_SIZE) + MAX_BLOCK_SIZE));
                 }
             }
-        } catch (InvalidBlockNumberException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
