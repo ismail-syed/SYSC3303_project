@@ -29,10 +29,6 @@ public class TFTPReader {
      * The max number of blocks in the file
      */
     private static final int MAX_BLOCK_NUMBER = Short.MAX_VALUE * 2 + 1; //65535
-    /**
-     * The total number of blocks in the file
-     */
-    private int numberOfBlocks;
 
     /**
      * Constructor
@@ -40,20 +36,19 @@ public class TFTPReader {
      * Creates a new {@link TFTPReader} with the specified file path
      *
      * @param filePath specifies the path to the file to read
-     * @throws IOException 
-     * @throws InvalidBlockNumberException 
      * @since 1.0
      */
-    public TFTPReader(String filePath) throws IOException, InvalidBlockNumberException{
+    public TFTPReader(String filePath){
+        try {
             //read the whole file into memory
             byte[] fileAsByteArray = Files.readAllBytes(new File(filePath).toPath());
             //Calculate the number of blocks from the file
-            this.numberOfBlocks = (fileAsByteArray.length / MAX_BLOCK_SIZE);
+            int numberOfBlocks = (fileAsByteArray.length / MAX_BLOCK_SIZE)+1;
             if(numberOfBlocks > MAX_BLOCK_NUMBER){
             	throw new InvalidBlockNumberException("Block number must be between 0 and " + Integer.toString(MAX_BLOCK_NUMBER));
             }
-            for (int i = 0; i <= numberOfBlocks; i++) {
-                if (i == numberOfBlocks) {
+            for (int i = 0; i < numberOfBlocks; i++) {
+                if (i == numberOfBlocks-1) {
                     //if last block then read to the end of file
                     blocksFromFile.put(i + 1, Arrays.copyOfRange(fileAsByteArray, i * MAX_BLOCK_SIZE, fileAsByteArray.length));
                 } else {
@@ -61,6 +56,9 @@ public class TFTPReader {
                     blocksFromFile.put(i + 1, Arrays.copyOfRange(fileAsByteArray, i * MAX_BLOCK_SIZE, (i * MAX_BLOCK_SIZE) + MAX_BLOCK_SIZE));
                 }
             }
+        } catch (IOException| InvalidBlockNumberException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -85,6 +83,6 @@ public class TFTPReader {
      * @since 1.0
      */
     public int getNumberOfBlocks() {
-        return this.numberOfBlocks;
+        return this.blocksFromFile.size();
     }
 }
