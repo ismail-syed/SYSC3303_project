@@ -219,7 +219,7 @@ public class TFTPClient {
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 					if(dataPacket.getData().length < 512) {
-						System.out.println("\nComplete File Has Been Sent\n");
+						System.out.println("\nComplete File Has Been Received\n");
 						firstTime = true;
 						tftpWriter.closeHandle();
 					}
@@ -238,7 +238,7 @@ public class TFTPClient {
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()){
 					firstTime = true;
-					System.out.println("\nComplete File Has Been Received\n");
+					System.out.println("\nComplete File Has Been Sent\n");
 				}
 			}else if(opcode == Opcode.ERROR){ // check for error packet and print message
 				ErrorPacket errorPacket = new ErrorPacket(data);
