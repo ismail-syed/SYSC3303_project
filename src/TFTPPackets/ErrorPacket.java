@@ -46,7 +46,7 @@ public class ErrorPacket extends TFTPPacket {
      * @param type
      * @param msg
      */
-    ErrorPacket(ErrorCode type, String msg) throws IllegalArgumentException, IOException {
+    public ErrorPacket(ErrorCode type, String msg) throws IllegalArgumentException, IOException {
     	super();
         if (type == null) throw new IllegalArgumentException("Please specify an error type along with your message");
         this.errorCode = type;
@@ -54,7 +54,7 @@ public class ErrorPacket extends TFTPPacket {
         createPacket(type, msg);
     }
     
-    ErrorPacket(byte[] data) throws MalformedPacketException, PacketOverflowException, IOException {
+    public ErrorPacket(byte[] data) throws MalformedPacketException, PacketOverflowException, IOException {
     	super();
     	createPacket(data);
         
