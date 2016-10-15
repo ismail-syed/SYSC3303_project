@@ -132,7 +132,11 @@ public class TFTPClient {
 				}
 				tftpPacket = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
+				try {
+					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}else if(cmd.equals("cd")) {//change directory
 				System.out.println("Enter the Directory Path:");
 				System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
