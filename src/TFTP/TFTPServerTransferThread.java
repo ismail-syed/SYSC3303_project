@@ -1,6 +1,7 @@
 package TFTP;
 
 import java.net.SocketTimeoutException;
+import java.nio.file.NoSuchFileException;
 import java.util.*;
 
 import Exceptions.InvalidBlockNumberException;
@@ -88,7 +89,7 @@ public class TFTPServerTransferThread implements Runnable {
                 System.out.println("Sending block 1");
                 tftpPacket = new DataPacket(1, tftpReader.getFileBlock(1));
                 previousBlockNumber = 1;
-                } catch (FileNotFoundException e) {
+                } catch (NoSuchFileException e) {
                 	tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "file not found");
                 	System.out.println("file not found");
                 }

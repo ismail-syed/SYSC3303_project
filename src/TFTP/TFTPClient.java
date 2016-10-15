@@ -108,7 +108,11 @@ public class TFTPClient {
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+				try {
+					tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}else if(cmd.equals("R")) {//read request
 				System.out.println("Client: creating RRQ packet.");
 
@@ -237,8 +241,8 @@ public class TFTPClient {
 					System.out.println("\nComplete File Has Been Received\n");
 				}
 			}else if(opcode == Opcode.ERROR){ // check for error packet and print message
-				//ERRORPacket errorPacket = new ERRORPacket(data);
-				//System.out.println("\nError Code: " + errorPacket.getCode() + "\nError Message: " + errorPacket.getMessage() + "\n");
+				ErrorPacket errorPacket = new ErrorPacket(data);
+				System.out.println("\nError Code: " + errorPacket.getErrorCode() + "\nError Message: " + errorPacket.getErrorMessage() + "\n");
 				firstTime = true;
 			}
 			
