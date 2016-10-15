@@ -118,13 +118,7 @@ public class TFTPServerTransferThread implements Runnable {
                         throw new FileAlreadyExistsException("File already exist");
                     }
                 	tftpWriter = new TFTPWriter(file.getPath(), false);
-                	//Create ACK packet with block number 0
-                    File file1 = new File(filePath + wrqPacket.getFilename());
-                    if(file1.exists()) {
-                        // handle file output already exists
-                        throw new FileAlreadyExistsException("File already exist");
-                    }
-                    tftpWriter = new TFTPWriter(file1.getPath(), false);
+                	
                     //Create ACK packet with block number 0
                     System.out.println("Sending ACK with block 0");
                     tftpPacket = new ACKPacket(0);
