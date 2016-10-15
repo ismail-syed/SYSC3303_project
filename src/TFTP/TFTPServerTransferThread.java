@@ -9,6 +9,7 @@ import FileIO.TFTPWriter;
 import TFTPPackets.*;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -81,11 +82,16 @@ public class TFTPServerTransferThread implements Runnable {
                 //Parse RRQ packet
                 RRQPacket rrqPacket = new RRQPacket(data);
                 //Read from File
+                try{
                 tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //Create DATA packet with first block of file
                 System.out.println("Sending block 1");
                 tftpPacket = new DataPacket(1, tftpReader.getFileBlock(1));
                 previousBlockNumber = 1;
+                } catch (FileNotFoundException e) {
+                	tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "file not found");
+                	System.out.println("file not found");
+                }
             } else if (opcode == TFTPPacket.Opcode.WRITE) {
                 System.out.println("Opcode: WRITE");
                 //Parse WRQ packet
