@@ -2,52 +2,126 @@ package TFTPPackets;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 
-import Exceptions.InvalidBlockNumberException;
 import Exceptions.MalformedPacketException;
 import Exceptions.PacketOverflowException;
-import TFTPPackets.TFTPPacket.Opcode;
 
 /**
  * @author Kunall Banerjee (100978717)
  */
 public class ErrorPacket extends TFTPPacket {
-    private ErrorType type;
+    private ErrorCode errorCode;
     private String msg;
 
-    public enum ErrorType {
+    public enum ErrorCode {
         FILE_NOT_FOUND(1), ACCESS_VIOLATION(2), DISC_FULL_OR_ALLOCATION_EXCEEDED(3), FILE_ALREADY_EXISTS(6);
 
         private int code;
 
-        ErrorType(int code) {
+        ErrorCode(int code) {
             this.code = code;
         }
 
         int getCode() {
             return code;
         }
+        
+        static ErrorCode getErrorCode(int code) throws IllegalArgumentException{
+        	if(code == 1) 
+        		return FILE_NOT_FOUND;
+        	if(code == 2) 
+        		return ACCESS_VIOLATION;
+        	if(code == 3) 
+        		return DISC_FULL_OR_ALLOCATION_EXCEEDED;
+        	if(code == 6) 
+        		return FILE_ALREADY_EXISTS;
+        	else
+        		throw new IllegalArgumentException("invalid ErrorCode");
+        }
+        
     }
 
     /**
      * @param type
      * @param msg
      */
-    ErrorPacket(ErrorType type, String msg) throws IllegalArgumentException {
+    ErrorPacket(ErrorCode type, String msg) throws IllegalArgumentException, IOException {
+    	super();
         if (type == null) throw new IllegalArgumentException("Please specify an error type along with your message");
-        this.type = type;
+        this.errorCode = type;
         this.msg = msg;
         createPacket(type, msg);
+    }
+    
+    ErrorPacket(byte[] data) throws MalformedPacketException, PacketOverflowException, IOException {
+    	super();
+    	createPacket(data);
+        
     }
 
     /**
      * @return The error type
      */
-    public ErrorType getErrorType() {
-        return this.type;
+    public ErrorCode getErrorCode() {
+        return this.errorCode;
     }
     
-    private void createPacket(ErrorType type, String msg) throws IOException{
+    void createPacket(byte[] packetAsByteArray) throws MalformedPacketException, PacketOverflowException, IOException {
+        StringBuilder sb = new StringBuilder();
+
+        if (packetAsByteArray.length > MAX_SIZE) {
+            throw new MalformedPacketException("Packet is larger than then maximum allowed size");
+        }
+
+        ByteBuffer bb = ByteBuffer.wrap(packetAsByteArray);
+        bb.rewind();
+
+        // First check first byte is 0
+        if (bb.get() != (byte) 0) {
+            throw new MalformedPacketException("Packet does not start with a 0 byte");
+        }
+        // Get opcode from second byte
+        byte opcodeAsByte = bb.get();
+        if (Opcode.asEnum((int) opcodeAsByte) != Opcode.ERROR) {
+        	throw new MalformedPacketException("Packet isn't an errorPacket");
+        }
+        
+        if (bb.get() != (byte) 0) {
+            throw new MalformedPacketException("Packet does not contain a valid code");
+        }
+        // Get opcode from second byte
+        opcodeAsByte = bb.get();
+        if (ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.ACCESS_VIOLATION &&
+        		ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED &&
+        		ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.FILE_ALREADY_EXISTS &&
+        		ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.FILE_NOT_FOUND) {
+        	throw new MalformedPacketException("Packet does not contain valid error code");
+        }
+        else {
+        	this.errorCode = ErrorCode.getErrorCode((int) opcodeAsByte);
+        }
+        // Get message between opcode byte and last zero byte
+        while (Byte.compare(bb.get(), (byte) 0) != 0 && bb.hasRemaining()) {
+            char c = (char) (bb.get(bb.position() - 1) & 0xFF);
+            sb.append(c);
+        }
+        // Check if valid file name
+        if (!Objects.equals(sb.toString(), "")) {
+            this.msg = sb.toString();
+        } else {
+            throw new MalformedPacketException("Packet does not contain a valid message");
+        }
+
+        // Get last 0 byte
+        bb.position(bb.position() - 1);
+        if (Byte.compare(bb.get(), (byte) 0) != 0) {
+            throw new MalformedPacketException("Packet does not end with a 0 byte");
+        }
+        createPacket(errorCode, msg);
+    }
+    
+    private void createPacket(ErrorCode type, String msg) throws IOException{
     		try {
                 // add first zero byte
                 this.addByte((byte) 0);
@@ -61,13 +135,6 @@ public class ErrorPacket extends TFTPPacket {
             } catch (PacketOverflowException e) {
                 e.printStackTrace();
             }
-    }
-
-    /**
-     * @return The code associated with a given error type
-     */
-    public int getCode() {
-        return this.type.getCode();
     }
 
     /**
