@@ -47,7 +47,7 @@ public class TFTPServerTransferThread implements Runnable {
     private DatagramSocket sendReceiveSocket;
     private TFTPReader tftpReader;
     private TFTPWriter tftpWriter;
-    private final static Pattern NO_SPACE_LEFT = Pattern.compile(": No space left on device$");
+    private final static Pattern NO_SPACE_LEFT = Pattern.compile(": not enough space on$");
     private byte dataBuffer[] = new byte[MAX_SIZE];
 
     public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath, boolean verbose) {
@@ -153,7 +153,7 @@ public class TFTPServerTransferThread implements Runnable {
 	                    tftpWriter.closeHandle();
 	                    transferFinished = true;
 	                }
-                } catch ( FileSystemException e) {
+                } catch ( IOException e) {
                 	if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
                         tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
                         System.out.println("Disc full");
