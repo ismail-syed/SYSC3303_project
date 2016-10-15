@@ -105,7 +105,7 @@ public class TFTPServer implements Runnable {
         Thread serverSocketListeningThread = new Thread(new TFTPServer());
         serverSocketListeningThread.start();
         for(;;){
-            System.out.println("Type \"QUIT\" to quit the server");
+            System.out.println("Type \"QUIT\" to quit the server or \"cd\" to change directory");
             userInput = in.nextLine();
             if(userInput.equals("QUIT")){
                 acceptingNewConnections = false;
@@ -118,6 +118,20 @@ public class TFTPServer implements Runnable {
                 System.exit(0);
                 in.close();
                 break;
+            }
+            else if(userInput.equals("cd")) {//change directory
+				System.out.println("Enter the Directory Path:");
+				System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
+
+				for(;;){
+					String input = in.nextLine();
+					if(input.equals("DEFAULT")){
+						//if default print the dir and finish
+						System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
+						filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+						break;
+					}
+				}
             }
         }
     }
