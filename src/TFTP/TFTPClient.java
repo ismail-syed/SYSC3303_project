@@ -304,7 +304,7 @@ public class TFTPClient {
 				if(new File (userInput).isDirectory()){
 					//if the path was provided finish
 					filePath = userInput + "\\";
-					System.out.println("You have entered a valid Directory Path\nYou can change the directory at any point by typing \"cd\"\n");
+					System.out.println("You have entered a valid Directory Path\n");
 					break;
 				}else{
 					//if the directory does not exist, ask for an input again
@@ -344,6 +344,7 @@ public class TFTPClient {
 
 			}
 		}
+		System.out.println("You can change the directory at any point by typing \"cd\"\n");
 		TFTPClient c = new TFTPClient();
 
 		while(true) {
