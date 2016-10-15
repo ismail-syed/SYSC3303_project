@@ -104,7 +104,7 @@ public class TFTPClient {
 						break;
 					}else{
 						//if the directory does not exist, ask for an input again
-						System.out.println("\nError Code: 1\nError Message: File Not Found\nPlease Try Again\n");
+						System.out.println("Error Message: File Not Found\nPlease Try Again\n");
 					}
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
@@ -127,7 +127,7 @@ public class TFTPClient {
 						break;
 					}else{
 						//if the directory does not exist, ask for an input again
-						System.out.println("\nError Code: 6\nError Message: File Already Exists\nPlease Try Again\n");
+						System.out.println("\nError Message: File Already Exists\nPlease Try Again\n");
 					}
 				}
 				tftpPacket = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
@@ -229,7 +229,7 @@ public class TFTPClient {
 						tftpWriter.closeHandle();
 					}
 				}else{
-					System.out.println("\nError Code: 3\nError Message: Disk Full or Allocation Exceded\n");
+					System.out.println("\nError Message: Disk Full or Allocation Exceded\n");
 					firstTime = true;
 				}
 			}else if(opcode == Opcode.ACK){
@@ -247,7 +247,7 @@ public class TFTPClient {
 				}
 			}else if(opcode == Opcode.ERROR){ // check for error packet and print message
 				ErrorPacket errorPacket = new ErrorPacket(data);
-				System.out.println("\nError Code: " + errorPacket.getErrorCode() + "\nError Message: " + errorPacket.getErrorMessage() + "\n");
+				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
 				firstTime = true;
 			}
 			
