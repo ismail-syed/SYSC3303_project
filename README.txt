@@ -73,6 +73,7 @@ FILES:
         └───TFTPPackets
                 ACKPacket.java
                 DataPacket.java
+                ErrorPacket.java
                 RRQPacket.java
                 RRQWRQPacketCommon.java
                 TFTPPacket.java
