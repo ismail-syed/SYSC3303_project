@@ -12,6 +12,7 @@ import java.net.*;
 import java.util.Arrays;
 import java.util.Scanner;
 
+import Exceptions.InvalidBlockNumberException;
 import Exceptions.PacketOverflowException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
@@ -37,6 +38,10 @@ public class TFTPClient {
 	// (send to simulator) mode
 	public static enum Mode { NORMAL, TEST};
 
+	/**
+	 * This is the constructor for the client
+	 * It created the required sockets and sets a timeout
+	 */
 	public TFTPClient()
 	{
 		firstTime = true;
@@ -52,6 +57,18 @@ public class TFTPClient {
 		}
 	}
 
+	/**
+	 * @param sc
+	 * @throws PacketOverflowException
+	 * @throws FileNotFoundException
+	 * 
+	 * This function is run for every file transfer
+	 * It asks the user if they want to do a read or a write request
+	 * as well as if they want to quit or change directories.
+	 * Once the information is give, the function will create the appropriate
+	 * packet and send it to the server or error simulator
+	 * 
+	 */
 	public void sendRequest(Scanner sc) throws PacketOverflowException, FileNotFoundException
 	{
 		String filename; // filename and mode as Strings
@@ -71,10 +88,10 @@ public class TFTPClient {
 		}
 		boolean done = false;
 		while(!done){
-			System.out.println("Enter READ for a read request, WRITE for a write request and QUIT to quit");
+			System.out.println("Choose Read or Write request(R/W) or enter \"QUIT\" to close the client");
 			String cmd = sc.nextLine();
-
-			if(cmd.equals("WRITE")){
+			//write request
+			if(cmd.equals("W")){
 				System.out.println("Client: creating WRQ packet.");
 
 				// next we have a file name
@@ -92,8 +109,12 @@ public class TFTPClient {
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				tftpReader = new TFTPReader(new File(filePath + filename).getPath());
-			}else if(cmd.equals("READ")) {
+				try {
+					tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+				} catch (IOException | InvalidBlockNumberException e) {
+					e.printStackTrace();
+				}
+			}else if(cmd.equals("R")) {//read request
 				System.out.println("Client: creating RRQ packet.");
 
 				// next we have a file name
@@ -111,25 +132,55 @@ public class TFTPClient {
 				}
 				tftpPacket = new RRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				done = true;
-				tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
-			}else if(cmd.equals("QUIT")) {
+				try {
+					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}else if(cmd.equals("cd")) {//change directory
+				System.out.println("Enter the Directory Path:");
+				System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
+
+				for(;;){
+					String userInput = sc.nextLine();
+					if(userInput.equals("DEFAULT")){
+						//if default print the dir and finish
+						System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
+						filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+						break;
+					}else{
+						if(new File (userInput).isDirectory()){
+							//if the path was provided finish
+							filePath = userInput + "\\";
+							System.out.println("You have entered a valid Directory Path\n");
+							break;
+						}else{
+							//if the directory does not exist, ask for an input again
+							System.out.println("Invalid Directory\nPlease Try Again.");
+						}
+					}
+				}
+			}else if(cmd.equals("QUIT")) {//quit
 				System.out.println("Client: Closing socket and exiting.");
 
-				// next we have a file name -- let's just pick one
+				// close scanner, socket and exit
 				sc.close();
 				sendReceiveSocket.close();
 				System.exit(0);
 			}
 		}
-		try {
+		try {// Send the datagram packet to the server via the send/receive socket.
 			sendPacketToServer(tftpPacket,InetAddress.getLocalHost(),sendPort);
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		// Send the datagram packet to the server via the send/receive socket.
 		System.out.println("Client: Packet sent.");
 	}
 
+	/**
+	 * This function deals with the actual file transfer
+	 * Data, ACK and error packets go through this function
+	 */
 	private void sendReceivePacket(){
 		byte dataBuffer[] = new byte[MAX_SIZE];
 		byte[] data = null;
@@ -166,15 +217,16 @@ public class TFTPClient {
 				}
 				//create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				if(new File(filePath).getUsableSpace()>= dataPacket.getData().length){
+				if(new File(filePath).getUsableSpace()>= dataPacket.getData().length){ //check if there is enough space available
 					//write the data you just received
 					tftpWriter.writeToFile(dataPacket.getData());
 					//create an ack packet from corresponding block number
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 					if(dataPacket.getData().length < 512) {
-						System.out.println("\nComplete File Has Been Sent\n");
+						System.out.println("\nComplete File Has Been Received\n");
 						firstTime = true;
+						tftpWriter.closeHandle();
 					}
 				}else{
 					System.out.println("\nError Code: 3\nError Message: Disk Full or Allocation Exceded\n");
@@ -191,11 +243,11 @@ public class TFTPClient {
 					sendPacketToServer(tftpPacket,receivePacket.getAddress(),receivePacket.getPort());
 				}else if(ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()){
 					firstTime = true;
-					System.out.println("\nComplete File Has Been Received\n");
+					System.out.println("\nComplete File Has Been Sent\n");
 				}
-			}else if(opcode == Opcode.ERROR){
-				//ERRORPacket errorPacket = new ERRORPacket(data);
-				//System.out.println("\nError Code: " + errorPacket.getCode() + "\nError Message: " + errorPacket.getMessage() + "\n");
+			}else if(opcode == Opcode.ERROR){ // check for error packet and print message
+				ErrorPacket errorPacket = new ErrorPacket(data);
+				System.out.println("\nError Code: " + errorPacket.getErrorCode() + "\nError Message: " + errorPacket.getErrorMessage() + "\n");
 				firstTime = true;
 			}
 			
@@ -205,6 +257,15 @@ public class TFTPClient {
 		}
 	}
 	
+	/**
+	 * @param tftpPacket
+	 * @param address
+	 * @param port
+	 * 
+	 * This function uses the information provided to create a send packet
+	 * and send it to the error simulator or the server
+	 * 
+	 */
 	public void sendPacketToServer(TFTPPacket tftpPacket, InetAddress address, int port) {
         //Send packet to client
         sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
@@ -226,6 +287,14 @@ public class TFTPClient {
         }
     }
 
+	/**
+	 * @param args
+	 * 
+	 * The main function requests the user for a directory and
+	 * asks if the client should run in verbose mode or quiet mode
+	 * After that, run the client on a look
+	 * 
+	 */
 	public static void main(String args[]) 
 	{
 		Scanner in = new Scanner(System.in);
@@ -238,6 +307,7 @@ public class TFTPClient {
 				//if default print the dir and finish
 				System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
 				filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+				System.out.println("\nYou can change the directory at any point by typing \"cd\"\n");
 				break;
 			}else{
 				if(new File (userInput).isDirectory()){
@@ -283,11 +353,12 @@ public class TFTPClient {
 
 			}
 		}
+		System.out.println("You can change the directory at any point by typing \"cd\"\n");
 		TFTPClient c = new TFTPClient();
 
 		while(true) {
 			try {
-				if(firstTime){c.sendRequest(in); firstTime = false;}
+				if(firstTime){c.sendRequest(in); firstTime = false;}//if its the first time, create the RRQ/WRQ packets
 				c.sendReceivePacket();
 			} catch(Exception e) {
 				e.printStackTrace();
