@@ -91,6 +91,7 @@ public class TFTPServerTransferThread implements Runnable {
                 } catch (FileNotFoundException e) {
                 	tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "file not found");
                 	System.out.println("file not found");
+                	transferFinished = true;
                 }
             } else if (opcode == TFTPPacket.Opcode.WRITE) {
                 System.out.println("Opcode: WRITE");
