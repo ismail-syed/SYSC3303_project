@@ -1,5 +1,13 @@
 package TFTPPackets;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import Exceptions.InvalidBlockNumberException;
+import Exceptions.MalformedPacketException;
+import Exceptions.PacketOverflowException;
+import TFTPPackets.TFTPPacket.Opcode;
+
 /**
  * @author Kunall Banerjee (100978717)
  */
@@ -29,6 +37,7 @@ public class ErrorPacket extends TFTPPacket {
         if (type == null) throw new IllegalArgumentException("Please specify an error type along with your message");
         this.type = type;
         this.msg = msg;
+        createPacket(type, msg);
     }
 
     /**
@@ -36,6 +45,22 @@ public class ErrorPacket extends TFTPPacket {
      */
     public ErrorType getErrorType() {
         return this.type;
+    }
+    
+    private void createPacket(ErrorType type, String msg) throws IOException{
+    		try {
+                // add first zero byte
+                this.addByte((byte) 0);
+                // add ACK opcode
+                this.addByte((byte) 5);
+                this.addByte((byte) 0);
+                this.addByte((byte) type.getCode());
+                this.addBytes(msg.getBytes());
+                // add final 0
+                this.addByte((byte) 0);
+            } catch (PacketOverflowException e) {
+                e.printStackTrace();
+            }
     }
 
     /**
