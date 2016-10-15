@@ -135,7 +135,7 @@ public class TFTPClient {
 				try {
 					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(),false);
 				} catch (IOException e) {
-					e.printStackTrace();
+					
 				}
 			}else if(cmd.equals("cd")) {//change directory
 				System.out.println("Enter the Directory Path:");

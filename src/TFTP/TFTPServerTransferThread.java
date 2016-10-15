@@ -99,15 +99,12 @@ public class TFTPServerTransferThread implements Runnable {
                 } catch (NoSuchFileException e) {
                     tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "file not found");
                     System.out.println("file not found");
-                    transferFinished = true;
                 } catch (FileNotFoundException e) {
                 	tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "File not found");
                 	System.out.println("file not found");
-                	transferFinished = true;
                 } catch (AccessDeniedException e) {
                 	tftpPacket = new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation");
                 	System.out.println("Access Violation");
-                    transferFinished = true;
                 }
             } else if (opcode == TFTPPacket.Opcode.WRITE) {
                 System.out.println("Opcode: WRITE");
@@ -135,12 +132,10 @@ public class TFTPServerTransferThread implements Runnable {
                 } catch ( FileAlreadyExistsException e) {
                     tftpPacket = new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS, "File already exists");
                     System.out.println("File already Exist");
-                    transferFinished = true;
                 } catch ( FileSystemException e) {
                 	if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
                         tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
                         System.out.println("Disc full");
-                        transferFinished = true;
                 	}
                 }
                 
@@ -168,13 +163,7 @@ public class TFTPServerTransferThread implements Runnable {
                 	if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
                         tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
                         System.out.println("Disc full");
-                        transferFinished = true;
                 	}
-                    if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
-                        tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
-                        System.out.println("Disc full");
-                        transferFinished = true;
-                    }
                 }
 
             } else if (opcode == TFTPPacket.Opcode.DATA) {
@@ -201,7 +190,6 @@ public class TFTPServerTransferThread implements Runnable {
                     if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
                         tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
                         System.out.println("Disc full");
-                        transferFinished = true;
                     }
                 }
             } else if (opcode == TFTPPacket.Opcode.ACK) {
@@ -222,6 +210,7 @@ public class TFTPServerTransferThread implements Runnable {
 
             if (!transferFinished) {
                 sendPacketToClient(tftpPacket);
+                if(tftpPacket instanceof ErrorPacket) transferFinished = true;
             }
 
         } catch (Exception e) {
