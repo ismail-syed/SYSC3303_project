@@ -103,6 +103,7 @@ SET UP INSTRUCTIONS:
        ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
 6) To close the server or the client type "QUIT"
 
+Note: Files can not be overwritten on the server and client
 ========================================================================
 TEST INSTRUCTIONS: 
 (Note: The numbers in the files below is how big the files are in bytes)
