@@ -154,33 +154,6 @@ public class TFTPServerTransferThread implements Runnable {
                         tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
                         System.out.println("Disc full");
                 }
-
-            } else if (opcode == TFTPPacket.Opcode.DATA) {
-                System.out.println("Opcode: DATA");
-                try{
-                    //Parse DATA packet
-                    DataPacket dataPacket = new DataPacket(data);
-                    //Write the data from the DATA packet
-                    if(dataPacket.getBlockNumber() != previousBlockNumber + 1){
-                        throw new InvalidBlockNumberException("Data is out of order");
-                    }
-                    tftpWriter.writeToFile(dataPacket.getData());
-                    previousBlockNumber = dataPacket.getBlockNumber();
-                    //Create an ACK packet for corresponding block number
-                    tftpPacket = new ACKPacket(previousBlockNumber);
-                    System.out.println("Sending ACK with block " + previousBlockNumber);
-                    if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
-                        //transfer finished for WRQ
-                        sendPacketToClient(tftpPacket);
-                        tftpWriter.closeHandle();
-                        transferFinished = true;
-                    }
-                } catch ( IOException e) {
-                    if(NO_SPACE_LEFT.matcher(e.getMessage()).find()){
-                        tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
-                        System.out.println("Disc full");
-                    }
-                }
             } else if (opcode == TFTPPacket.Opcode.ACK) {
                 System.out.println("Opcode: ACK");
                 //Parse ACK packet
