@@ -1,7 +1,9 @@
 ﻿========================================================================
+
 TEAM: 3000000
 
-Group Members: 
+Group Members:
+
 - Kunall Banerjee (#100978717)
 - Mohamed Zalat (#100968390)
 - Shasthra Ranasinghe (#100867803)
@@ -9,22 +11,93 @@ Group Members:
 - Aritra Sengupta (#100921432)
 
 ========================================================================
-RESPONSIBILITIES: 
 
-Kunall Banerjee & Mohamed Zalat:
--
+SET UP INSTRUCTIONS
 
-Shasthra Ranasinghe:
-- 
+1) Open Eclipse
+2) Select File -> Import then General -> Existing Projects into Workspace 
+3) For the root directory select the submitted folder "SYSC3303_Iteration2"
+3) Run TFTPClient.java
+	 i) Type DEFAULT to chose the directory the program is running in or 
+	    type in a path to a directory (the directory can be changed by typing "cd").
+	    The directory chosen in this step will be where files transferred from the server
+	    to the client will be stored.
+	ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
+       iii) To use test mode type "TEST" to use normal mode type "NORMAL"
+	iv) Chose Read or Write request by typing "R" or "W"
+	 v) Type file name of a file existing in the directory chosen in step i)
+	
+4) Run TFTPSim.java
+5) Run TFTPServer.java
+        i) Type DEFAULT to chose the directory the program is running in or 
+	   type in a path to a directory (the directory can be changed by typing "cd"). 
+	   The directory chosen in this step will be where files transferred from the client
+	   to the server will be stored.
+       ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
+6) To close the server or the client type "QUIT"
 
-Aritra Sengupta:
-- 
-
-Ismail Syed:
-- 
+Note: Files can NOT be overwritten on the server and client
 
 ========================================================================
-FILES:
+
+RESPONSIBILITIES
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kunall Banerjee & Mohamed Zalat
+- Client side implementation
+- Client is able to read and write to files
+- Added verbose and quite mode
+- Added test and normal mode
+- Client also responds to data and acknowledgement packets appropriately
+
+Shasthra Ranasinghe
+- Server side implementation
+- Writing the DataPacket, Reader and Write classes
+- Implementing steady-state file transfer from the server
+- Implementing threading on the server
+- Modifying the Error Simulator to work with DATA and ACK packets with a multithreaded server
+
+Aritra Sengupta
+- Writing the Exceptions, FileIO and TFTPPackets packages
+- Implementing steady-state file transfer from the server
+- Implementing threading on the server
+- Git integration
+
+Ismail Syed
+- Project management and coordination
+- Git & Github repository setup, integration and management
+- UML class diagram
+- UCM diagrams
+- Readme.txt creation and maintenance
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 2
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Kunall Banerjee & Mohamed Zalat
+- Server side implementation
+- Created the whole class structure for the ErrorPacket class
+- Exceptions are caught gracefully & translated to proper
+  TFTP error codes
+- Fixed issues raised in feedback obtained for ITERATION 1
+
+
+Shasthra Ranasinghe
+-
+
+Aritra Sengupta
+-
+
+Ismail Syed
+-
+
+========================================================================
+
+FILES
 │   README.txt
 │
 ├───Images
@@ -78,35 +151,13 @@ FILES:
                 RRQWRQPacketCommon.java
                 TFTPPacket.java
                 WRQPacket.java
-========================================================================
-SET UP INSTRUCTIONS: 
 
-1) Open Eclipse
-2) Select File->Import then General->Existing Projects into Workspace 
-3) For the root directory select the submitted folder "SYSC3303_Iteration2"
-3) Run TFTPClient.java
-	 i) Type DEFAULT to chose the directory the program is running in or 
-	    type in a path to a directory (the directory can be changed by typing "cd").
-	    The directory chosen in this step will be where files transferred from the server
-	    to the client will be stored.
-	ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
-       iii) To use test mode type "TEST" to use normal mode type "NORMAL"
-	iv) Chose Read or Write request by typing "R" or "W"
-	 v) Type file name of a file existing in the directory chosen in step i)
-	
-4) Run TFTPSim.java
-5) Run TFTPServer.java
-        i) Type DEFAULT to chose the directory the program is running in or 
-	   type in a path to a directory (the directory can be changed by typing "cd"). 
-	   The directory chosen in this step will be where files transferred from the client
-	   to the server will be stored.
-       ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
-6) To close the server or the client type "QUIT"
-
-Note: Files can not be overwritten on the server and client
 ========================================================================
-TEST INSTRUCTIONS: 
+
+TEST INSTRUCTIONS
+
 (Note: The numbers in the files below is how big the files are in bytes)
+
 1) Complete Set up instruction above.
 2) When making a read request the files available are:
 - Server_0.txt
@@ -122,6 +173,9 @@ TEST INSTRUCTIONS:
 - Client_90000.txt
 
 ========================================================================
-Credits:
-- Assignment 1 Sample Solution from the Course Materials Page
+
+CREDITS
+
+Assignment 1 sample solution from the Course Materials Page
+
 ========================================================================
