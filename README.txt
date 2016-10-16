@@ -85,14 +85,19 @@ Kunall Banerjee & Mohamed Zalat
   TFTP error codes
 - Fixed issues raised in feedback obtained for ITERATION 1
 
-
 Shasthra Ranasinghe
 - Client side Error check implementation
 - Error simmulator modifications
 - Fixed issues and bugs from Iteration 1
 
 Aritra Sengupta
--
+- Project management and coordination
+- Git management
+- UML class diagram
+- Timing diagrams for Error 1, 2, 3 and 6
+- Updated UCMs for Read and Write file transfer
+- Updated README.txt
+
 
 Ismail Syed
 -
