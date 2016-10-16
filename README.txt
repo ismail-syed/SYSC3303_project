@@ -87,7 +87,9 @@ Kunall Banerjee & Mohamed Zalat
 
 
 Shasthra Ranasinghe
--
+- Client side Error check implementation
+- Error simmulator modifications
+- Fixed issues and bugs from Iteration 1
 
 Aritra Sengupta
 -
