@@ -1,6 +1,5 @@
 package FileIO;
 
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -27,7 +26,7 @@ public class TFTPWriter {
      * @param append   specifies whether to append to file or start from beginning
      * @since 1.0
      */
-    public TFTPWriter(String filePath, boolean append) throws FileNotFoundException {
+    public TFTPWriter(String filePath, boolean append) throws IOException {
         //create a file at filePath if file does not exist and append to it
         outputStream = new FileOutputStream(filePath, append);
     }
