@@ -8,8 +8,6 @@ import java.nio.file.FileSystemException;
 
 import java.nio.file.NoSuchFileException;
 import java.util.*;
-import java.util.regex.Pattern;
-
 import Exceptions.InvalidBlockNumberException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
@@ -151,7 +149,7 @@ public class TFTPServerTransferThread implements Runnable {
 	                    transferFinished = true;
 	                }
                 } catch ( IOException e) {
-                        tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full");
+                        tftpPacket = new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disc full");
                         System.out.println("Disc full");
                 }
             } else if (opcode == TFTPPacket.Opcode.ACK) {
