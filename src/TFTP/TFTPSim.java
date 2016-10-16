@@ -30,6 +30,7 @@ private DatagramPacket sendPacket, receivePacket;
 private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
 private int serverPort = 69;
 private int requestOpCode;//used to distinguish between read and write
+private boolean firstTime = true;
 
 public TFTPSim()
 {
@@ -65,7 +66,12 @@ public void passOnTFTP()
       System.out.println("Simulator: Waiting for packet.");
       // Block until a datagram packet is received from receiveSocket.
       try {
-         receiveSocket.receive(receivePacket);
+    	  if(firstTime){
+    		  receiveSocket.receive(receivePacket);
+    		  firstTime = false;
+    	  }else{
+    		  sendSocket.receive(receivePacket);
+    	  }
       } catch (IOException e) {
          e.printStackTrace();
          System.exit(1);
@@ -142,6 +148,8 @@ public void passOnTFTP()
          e.printStackTrace();
          System.exit(1);
       }
+      
+      if(data[1]==(byte)5) firstTime = true;
 
       // Process the received datagram.
       System.out.println("Simulator: Packet received:");
@@ -209,7 +217,7 @@ public void passOnTFTP()
           System.out.println("Simulator: Waiting for packet.");
           // Block until a datagram packet is received from receiveSocket.
           try {
-             receiveSocket.receive(receivePacket);
+        	 sendSocket.receive(receivePacket);
           } catch (IOException e) {
              e.printStackTrace();
              System.exit(1);
@@ -226,10 +234,11 @@ public void passOnTFTP()
            }
           System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data,0,sendPacket.getLength()))+"\n");
           serverPort = 69;
+          firstTime = true;
       }
       
       //check if its the last data block
-      if(requestOpCode == 2 && endOfWriteDataSize<516) serverPort = 69;
+      if(requestOpCode == 2 && endOfWriteDataSize<516) {serverPort = 69; firstTime = true;}
 
       System.out.println("Simulator: packet sent using port " + sendSocket.getLocalPort());
       System.out.println();
