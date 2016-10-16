@@ -15,10 +15,10 @@ Group Members:
 SET UP INSTRUCTIONS
 
 1) Open Eclipse
-2) Select File -> Import then General -> Existing Projects into Workspace 
+2) Select File -> Import then General -> Existing Projects into Workspace
 3) For the root directory select the submitted folder "SYSC3303_Iteration2"
 3) Run TFTPClient.java
-	 i) Type DEFAULT to chose the directory the program is running in or 
+	 i) Type DEFAULT to chose the directory the program is running in or
 	    type in a path to a directory (the directory can be changed by typing "cd").
 	    The directory chosen in this step will be where files transferred from the server
 	    to the client will be stored.
@@ -26,11 +26,11 @@ SET UP INSTRUCTIONS
        iii) To use test mode type "TEST" to use normal mode type "NORMAL"
 	iv) Chose Read or Write request by typing "R" or "W"
 	 v) Type file name of a file existing in the directory chosen in step i)
-	
+
 4) Run TFTPSim.java
 5) Run TFTPServer.java
-        i) Type DEFAULT to chose the directory the program is running in or 
-	   type in a path to a directory (the directory can be changed by typing "cd"). 
+        i) Type DEFAULT to chose the directory the program is running in or
+	   type in a path to a directory (the directory can be changed by typing "cd").
 	   The directory chosen in this step will be where files transferred from the client
 	   to the server will be stored.
        ii) Choose to keep Verbose mode on or off by typing "Y" or "N"
@@ -71,12 +71,10 @@ Ismail Syed
 - Git & Github repository setup, integration and management
 - UML class diagram
 - UCM diagrams
-- Readme.txt creation and maintenance
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ITERATION 2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 Kunall Banerjee & Mohamed Zalat
 - Server side implementation
@@ -86,21 +84,22 @@ Kunall Banerjee & Mohamed Zalat
 - Fixed issues raised in feedback obtained for ITERATION 1
 
 Shasthra Ranasinghe
-- Client side Error check implementation
-- Error simmulator modifications
-- Fixed issues and bugs from Iteration 1
+- Client side implementation
+- Error checking on the client-side
+- Error simulator modifications
+- Fixed issues and bugs from ITERATION 1
 
 Aritra Sengupta
 - Project management and coordination
 - Git management
 - UML class diagram
-- Timing diagrams for Error 1, 2, 3 and 6
-- Updated UCMs for Read and Write file transfer
-- Updated README.txt
-
+- Timing diagrams for error codes 01, 02, 03 and 06
+- Updated UCMs for READ and WRITE file transfers
 
 Ismail Syed
--
+- Client side implementation
+- Fixed issues and bugs from ITERATION 1
+- Minor bug fixes
 
 ========================================================================
 
