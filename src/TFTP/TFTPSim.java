@@ -20,8 +20,9 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
-import TFTP.TFTPErrorSimMode.SimState;
-import TFTP.TFTPErrorSimMode.TransferMode;
+import TFTP.TFTPErrorSimMode.ErrorSimState;
+import TFTP.TFTPErrorSimMode.ErrorSimTransferMode;
+import TFTPPackets.ErrorPacket;
 import TFTPPackets.TFTPPacket;
 import TFTPPackets.ErrorPacket.ErrorCode;
 
@@ -34,6 +35,7 @@ public class TFTPSim {
 	private int requestOpCode;// used to distinguish between read and write
 	private boolean firstTime = true;
 	private int currentPacketNumber;
+	private TFTPPacket tftpErrorPacket;
 
 	public TFTPSim() {
 		try {
@@ -51,7 +53,7 @@ public class TFTPSim {
 		}
 	}
 
-	public void passOnTFTP(TFTPErrorSimMode mode) {
+	public void passOnTFTP(TFTPErrorSimMode errorSimMode) {
 
 		byte[] data;
 
@@ -113,7 +115,18 @@ public class TFTPSim {
 				SEND DATAPACKET TO THE SERVER
 			 	Construct a DatagramPacket that is to be sent to the server on serverPort.
 			**/
-			sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
+			//Check if we're in the LOST_PACKET mode and handle requests appropriately 
+			if(checkToGenerateLostPacketWRQ(errorSimMode, currentPacketNumber)){
+	            try {
+					tftpErrorPacket =  new ErrorPacket(ErrorPacket.ErrorCode.LOST_PACKET_RRQ, "Lost packet on WRQ going to the server.");
+				} catch (IllegalArgumentException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				};
+				sendPacket = new DatagramPacket(tftpErrorPacket.getByteArray(), tftpErrorPacket.getByteArray().length, receivePacket.getAddress(), serverPort);	
+			} else {
+				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
+			}
 
 			System.out.println("Simulator: Sending packet to server.");
 			System.out.println("To host: " + sendPacket.getAddress());
@@ -148,7 +161,7 @@ public class TFTPSim {
 				System.exit(1);
 			}
 
-			// keep track of the packet number
+			// keep track of the packet numbers being sent back to the client from the server
 			currentPacketNumber++; 
 			
 			if (data[1] == (byte) 5)
@@ -169,7 +182,18 @@ public class TFTPSim {
 				SEND PACKET TO THE CLIENT
 			 	Construct a DatagramPacket that is to be sent to the client on serverPort.
 			**/
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			//Check if were in the LOST_PACKET mode and handle requests appropriately 
+			if(checkToGenerateLostPacketOnRRQ(errorSimMode, currentPacketNumber)){
+	            try {
+					tftpErrorPacket =  new ErrorPacket(ErrorPacket.ErrorCode.LOST_PACKET_RRQ, "Lost packet on RRQ going to the client.");
+				} catch (IllegalArgumentException | IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				};
+				sendPacket = new DatagramPacket(tftpErrorPacket.getByteArray(), tftpErrorPacket.getByteArray().length, receivePacket.getAddress(), clientPort);	
+			} else {
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);	
+			}
 
 			System.out.println("Simulator: Sending packet "+ currentPacketNumber +" to client.");
 			System.out.println("To host: " + sendPacket.getAddress());
@@ -241,13 +265,28 @@ public class TFTPSim {
 		} // end of loop
 
 	}
-
+	
+	// Helper method to check if we are in the appropriate errorSimMode to return a lost packet response on a RRQ to the client
+	public boolean checkToGenerateLostPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
+		return lostPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
+	}
+	
+	// Helper method to check if we are in the appropriate errorSimMode to return a lost packet response on a WRQ to the client
+	public boolean checkToGenerateLostPacketWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
+		return lostPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
+	}
+	
+	// Helper method to check if currentPacketNum matches the packet number specified by the errorSimMode properties
+	public boolean lostPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum){ 
+		return errorSimMode.getSimState() == ErrorSimState.LOST_PACKET && errorSimMode.getPacketNumer() == currentPacketNum;
+	}
+	
 	public static void main(String args[]) {
 		TFTPSim s = new TFTPSim();
 		
 		// Not utilized yet. just a placeholder for now
 		// This is where we will specify the error sim behavior which will be consumed by passOnTFTP()
-		TFTPErrorSimMode simMode = new TFTPErrorSimMode(SimState.NORMAL, TransferMode.RRQ, 0, 0); 
+		TFTPErrorSimMode simMode = new TFTPErrorSimMode(ErrorSimState.LOST_PACKET, ErrorSimTransferMode.WRQ, 1, 0); 
 		
 		s.passOnTFTP(simMode);
 	}

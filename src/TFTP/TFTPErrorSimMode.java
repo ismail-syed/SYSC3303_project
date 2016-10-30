@@ -11,14 +11,14 @@ package TFTP;
 public class TFTPErrorSimMode {
 	
 	// The state which the Simulation run in 
-	public enum SimState { NORMAL, LOSE_PACKET, DELAY_PACKET, DUPLICATE_PACKET };
+	public enum ErrorSimState { NORMAL, LOST_PACKET, DELAY_PACKET, DUPLICATE_PACKET };
 	
 	// Operation mode for the Error Sim
-	public enum TransferMode { RRQ, WRQ };
+	public enum ErrorSimTransferMode { RRQ, WRQ };
 	
 	// The required properties to manage the Error simulator
-	private SimState simState;
-	private TransferMode transferMode;
+	private ErrorSimState simState;
+	private ErrorSimTransferMode transferMode;
 	private int packetNumer;
 	private int delayLength; 
 	
@@ -30,7 +30,7 @@ public class TFTPErrorSimMode {
 	 * packetNum: the packet number for which we want the error sim to operate on 
 	 * delayLen: The delay length for the delay of packets in the DELAY_PACKET mode
 	 */
-	public TFTPErrorSimMode(SimState state, TransferMode mode, int packetNum, int delayLen){
+	public TFTPErrorSimMode(ErrorSimState state, ErrorSimTransferMode mode, int packetNum, int delayLen){
 		this.simState = state; 
 		this.transferMode = mode;
 		this.packetNumer = packetNum; 
@@ -41,11 +41,11 @@ public class TFTPErrorSimMode {
 	 * GETTERS
 	 */
 	
-	public SimState getSimState() {
+	public ErrorSimState getSimState() {
 		return simState;
 	}	
 	
-	public TransferMode getTransferMode() {
+	public ErrorSimTransferMode getTransferMode() {
 		return transferMode;
 	}	
 

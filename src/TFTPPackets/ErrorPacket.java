@@ -15,7 +15,8 @@ public class ErrorPacket extends TFTPPacket {
     private String msg;
 
     public enum ErrorCode {
-        FILE_NOT_FOUND(1), ACCESS_VIOLATION(2), DISC_FULL_OR_ALLOCATION_EXCEEDED(3), FILE_ALREADY_EXISTS(6);
+        FILE_NOT_FOUND(1), ACCESS_VIOLATION(2), DISC_FULL_OR_ALLOCATION_EXCEEDED(3), FILE_ALREADY_EXISTS(6),
+        LOST_PACKET_RRQ(7), LOST_PACKET_WRQ(8);
 
         private int code;
 
@@ -36,6 +37,10 @@ public class ErrorPacket extends TFTPPacket {
         		return DISC_FULL_OR_ALLOCATION_EXCEEDED;
         	if(code == 6) 
         		return FILE_ALREADY_EXISTS;
+        	if(code == 7) 
+        		return LOST_PACKET_RRQ;
+        	if(code == 8) 
+        		return LOST_PACKET_WRQ;
         	else
         		throw new IllegalArgumentException("invalid ErrorCode");
         }
