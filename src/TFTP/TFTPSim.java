@@ -5,7 +5,7 @@ package TFTP;
  * (based on Assignment 1 solution)
  *
  * @author Team 3000000
- * @author Shasthra Ranasinghe
+ * @author Shasthra Ranasinghe, Ismail Syed (100923110)
  * @version 1.0
  */
 //TFTPSim.java
@@ -36,7 +36,12 @@ public class TFTPSim {
 	private boolean firstTime = true;
 	private int currentPacketNumber;
 	private TFTPPacket tftpErrorPacket;
-
+	
+	// console input modes
+	private static final int LOST_PACKET = 1, DELAY_PACKET = 2, DUPLICATE_PACKET = 3,
+							 TRANSFER_MODE_RRQ = 1, TRANSFER_MODE_WRQ = 2; 
+	
+	
 	public TFTPSim() {
 		try {
 			// Construct a datagram socket and bind it to port 23
@@ -71,7 +76,7 @@ public class TFTPSim {
 			/**
 				RECEIVE PACKET FROM CLIENT
 			**/
-			System.out.println("Simulator: Waiting for packet from client...\n");
+			System.out.println("\nSimulator: Waiting for packet from client...\n");
 			// Block until a datagram packet is received from receiveSocket.
 			try {
 				if (firstTime) {
@@ -322,14 +327,88 @@ public class TFTPSim {
 		return errorSimMode.getSimState() == ErrorSimState.DELAY_PACKET && errorSimMode.getPacketNumer() == currentPacketNum;
 	}
 	
+	// Helper method to validate error sim mode inputed through console
+	private static boolean isValidErrorSimMode(int mode){
+		return mode == 1 || mode == 2 || mode == 3;
+	}
 	
+	// Helper method to validate error sim transfer mode inputed through console
+	private static boolean isValidErrorSimTransferMode(int mode){
+		return mode == 1 || mode == 2 ;
+	}
 	
 	public static void main(String args[]) {
 		TFTPSim s = new TFTPSim();
 		
-		// Not utilized yet. just a placeholder for now
-		// This is where we will specify the error sim behavior which will be consumed by passOnTFTP()
-		TFTPErrorSimMode simMode = new TFTPErrorSimMode(ErrorSimState.DELAY_PACKET, ErrorSimTransferMode.WRQ, 2, 0); 
+		Scanner scanner = new Scanner(System.in);
+		ErrorSimState errorSimMode = null;
+		ErrorSimTransferMode errorSimtransferMode = null;
+		
+		int packetNumber = 0, 
+			delayLength = 0, 
+			inputErrorSimMode; 
+		
+		boolean errorSimModeSelected = false, 
+				errorSimTransferModeSeleted = false;
+		
+		// Get error sim mode console input
+		// TODO Error checking on console input
+		do {
+			System.out.println("Select Error Simulator mode: \n(1)Lost a packet.\n(2)Delay a packet\n(3)Duplicate a packet.");
+			inputErrorSimMode = scanner.nextInt();
+			
+			if(isValidErrorSimMode(inputErrorSimMode)){
+				// Set error sim mode
+				if(inputErrorSimMode == LOST_PACKET){
+					errorSimMode = ErrorSimState.LOST_PACKET;
+				}else if(inputErrorSimMode == DELAY_PACKET){
+					errorSimMode = ErrorSimState.DELAY_PACKET;
+				}else if(inputErrorSimMode == DUPLICATE_PACKET){
+					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
+				}
+				
+				// we have a valid input now
+				errorSimModeSelected = true; 
+			}
+			
+		} while(!errorSimModeSelected);
+		
+		
+		// Get error sim transfer mode
+		// TODO Error checking on console input
+		do {
+			System.out.println("Select Error Simulator transfer mode: \n(1)RRQ.\n(2)WRQ");
+			inputErrorSimMode = scanner.nextInt();
+			
+			if(isValidErrorSimTransferMode(inputErrorSimMode)){
+				if(inputErrorSimMode == TRANSFER_MODE_RRQ){
+					errorSimtransferMode = ErrorSimTransferMode.RRQ;
+				} else if(inputErrorSimMode == TRANSFER_MODE_WRQ){
+					errorSimtransferMode = ErrorSimTransferMode.WRQ;
+				}
+				errorSimTransferModeSeleted = true;
+			}
+			
+		} while(!errorSimTransferModeSeleted);
+		
+		
+		// Get packetNumber
+		// TODO Error checking on console input
+		System.out.println("Enter packet number: ");
+		packetNumber = scanner.nextInt();			
+		
+			
+		// Get delay length
+		// TODO Error checking on console input
+		if(errorSimMode == ErrorSimState.DELAY_PACKET){
+			System.out.println("Enter delay length: ");
+			delayLength = scanner.nextInt();			
+		}
+							
+		
+		// initialize simMode
+		TFTPErrorSimMode simMode = new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength); 
+		
 		
 		s.passOnTFTP(simMode);
 	}
