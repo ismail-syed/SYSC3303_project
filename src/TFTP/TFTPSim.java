@@ -36,7 +36,7 @@ public class TFTPSim {
 	private boolean firstTime = true;
 	private int currentPacketNumber;
 	private TFTPPacket tftpErrorPacket;
-	
+	private boolean dropPacket = false; // helps determine when we should drop packets
 	// console input modes
 	private static final int LOST_PACKET = 1, DELAY_PACKET = 2, DUPLICATE_PACKET = 3,
 							 TRANSFER_MODE_RRQ = 1, TRANSFER_MODE_WRQ = 2; 
@@ -122,13 +122,9 @@ public class TFTPSim {
 			**/
 			//Check if we're in the LOST_PACKET mode and handle requests appropriately 
 			if(checkToGenerateLostPacketWRQ(errorSimMode, currentPacketNumber)){
-	            try {
-					tftpErrorPacket =  new ErrorPacket(ErrorPacket.ErrorCode.LOST_PACKET_RRQ, "Lost packet on WRQ going to the server.");
-				} catch (IllegalArgumentException | IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				};
-				sendPacket = new DatagramPacket(tftpErrorPacket.getByteArray(), tftpErrorPacket.getByteArray().length, receivePacket.getAddress(), serverPort);	
+				// Simulate a lost by not setting sendPacket
+				dropPacket = true;
+				System.out.println("LOST PACKET: On WRQ for packet number #" + currentPacketNumber + "\n");
 			}
 			else if(checkToDelayPacketOnWRQ(errorSimMode, currentPacketNumber)) {
 				System.out.println("\nDELAY: Delaying packing on WRQ to the server by " +  errorSimMode.getDelayLength() + " seconds \n");
@@ -151,12 +147,17 @@ public class TFTPSim {
 			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
 
 			// Send the datagram packet to the server via the send/receivesocket.
-			try {
-				sendReceiveSocket.send(sendPacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+			if(!dropPacket){
+				try {
+					sendReceiveSocket.send(sendPacket);
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
+			} else {
+				dropPacket = false;
 			}
+			
 
 			/**
 				RECEIVE PACKET FROM SERVER
@@ -198,13 +199,9 @@ public class TFTPSim {
 			**/
 			//Check if were in the LOST_PACKET mode and handle requests appropriately 
 			if(checkToGenerateLostPacketOnRRQ(errorSimMode, currentPacketNumber)){
-	            try {
-					tftpErrorPacket =  new ErrorPacket(ErrorPacket.ErrorCode.LOST_PACKET_RRQ, "Lost packet on RRQ going to the client.");
-				} catch (IllegalArgumentException | IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				};
-				sendPacket = new DatagramPacket(tftpErrorPacket.getByteArray(), tftpErrorPacket.getByteArray().length, receivePacket.getAddress(), clientPort);	
+				// enable flag to know if we should drop this packet
+				dropPacket = true;
+				System.out.println("LOST PACKET: On RRQ for packet number #" + currentPacketNumber + "\n");
 			}
 			else if(checkToDelayPacketOnRRQ(errorSimMode, currentPacketNumber)) {
 				System.out.println("\nDELAY: Delaying packing on RRQ to the client by " +  errorSimMode.getDelayLength() + " seconds \n");
@@ -237,12 +234,17 @@ public class TFTPSim {
 				System.exit(1);
 			}
 
-			try {
-				sendSocket.send(sendPacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+			if(!dropPacket){
+				try {
+					sendSocket.send(sendPacket);
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}	
+			} else {
+				dropPacket = false;
 			}
+			
 
 			// check if its the last data block
 			if (requestOpCode == 1 && fromServerLen < 516) {
