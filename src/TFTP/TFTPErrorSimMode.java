@@ -1,5 +1,7 @@
 package TFTP;
 
+import TFTPPackets.TFTPPacket.Opcode;
+
 /**
  * The {TFTPErrorSimMode} class manages the state of the Error Simulation
  * handling modes
@@ -12,8 +14,7 @@ package TFTP;
 public class TFTPErrorSimMode {
 
 	private ErrorSimState simState;
-	private ErrorSimTransferMode transferMode;
-	private ErrorSimDuplicatePacketType duplicatePacketType;
+	private Opcode packetType;
 	private int packetNumer;
 	private int delayLength;
 
@@ -22,13 +23,9 @@ public class TFTPErrorSimMode {
 		NORMAL, LOST_PACKET, DELAY_PACKET, DUPLICATE_PACKET
 	};
 
-	// Operation mode for the Error Sim
-	protected enum ErrorSimTransferMode {
-		RRQ, WRQ
-	};
 
-	protected enum ErrorSimDuplicatePacketType {
-		DATA, ACK, REQUEST;
+	protected enum ErrorSimPacketType {
+		DATA, ACK, RRQ, WRQ;
 	}
 	
 	/**
@@ -47,20 +44,15 @@ public class TFTPErrorSimMode {
 	 *            Duplicate packet type specified for ErrorSimState.DUPLICATE_PACKET 
 	 *            
 	 */
-	public TFTPErrorSimMode(ErrorSimState state, ErrorSimTransferMode mode,  int packetNum, int delayLen, ErrorSimDuplicatePacketType packetType) {
+	public TFTPErrorSimMode(ErrorSimState state,  Opcode packetType, int packetNum, int delayLen) {
 		this.simState = state;
-		this.transferMode = mode;
 		this.packetNumer = packetNum;
 		this.delayLength = delayLen;
-		this.duplicatePacketType = packetType;
+		this.packetType = packetType;
 	}
 	
 	public ErrorSimState getSimState() {
 		return simState;
-	}
-
-	public ErrorSimTransferMode getTransferMode() {
-		return transferMode;
 	}
 
 	public int getPacketNumer() {
@@ -71,8 +63,8 @@ public class TFTPErrorSimMode {
 		return delayLength;
 	}
 	
-	public ErrorSimDuplicatePacketType getduplicatePacketType() {
-		return duplicatePacketType;
+	public Opcode getPacketType() {
+		return packetType;
 	}
 
 }
