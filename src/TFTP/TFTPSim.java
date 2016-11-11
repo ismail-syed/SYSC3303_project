@@ -64,6 +64,8 @@ public class TFTPSim {
 		int clientPort, fromServerLen, fromClientLen, endOfWriteDataSize;
 		currentPacketNumber = 0;
 
+		PacketType packetType = null;
+
 		// loop forever
 		for (;;) {
 			// Construct a DatagramPacket for receiving packets.
@@ -71,9 +73,14 @@ public class TFTPSim {
 			data = new byte[516];
 			receivePacket = new DatagramPacket(data, data.length);
 
-			// if user wants to duplicate a packet
-			if (mode.getSimState() == ErrorSimState.DUPLICATE_PACKET) {
-			}
+			// DUPLICATE PACKET
+			// DO NOT REMOVE THIS
+			// // if user wants to duplicate a packet
+			// if (mode.getSimState() == ErrorSimState.DUPLICATE_PACKET) {
+			// if (packetType == PacketType.ACK) {
+			// } else if (packetType == PacketType.DATA) {
+			// }
+			// }
 
 			/**
 			 * RECEIVE PACKET FROM CLIENT
@@ -301,31 +308,34 @@ public class TFTPSim {
 		Scanner sc = new Scanner(System.in);
 		ErrorSimTransferMode errorSimtransferMode = null;
 
-		int packetNumber = 0, delayLength = 0;
+		int packetNumber = 0, delayLength = 0, packetType = 0;
 
 		boolean errorSimModeSelected = false, errorSimTransferModeSelected = false;
 
 		// Get error sim mode console input
 		do {
 			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Duplicate packet");
-			int simMode = sc.nextInt();
+			int inp = sc.nextInt();
 			// Set error sim mode
-			if (isValidErrorSimMode(simMode)) {
-				if (simMode == ErrorSimState.NORMAL.ordinal()) {
+			if (isValidErrorSimMode(inp)) {
+				if (inp == ErrorSimState.NORMAL.ordinal()) {
 					errorSimMode = ErrorSimState.NORMAL;
-				} else if (simMode == ErrorSimState.LOST_PACKET.ordinal()) {
+				} else if (inp == ErrorSimState.LOST_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.LOST_PACKET;
-				} else if (simMode == ErrorSimState.DELAY_PACKET.ordinal()) {
+				} else if (inp == ErrorSimState.DELAY_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DELAY_PACKET;
-				} else if (simMode == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
+				} else if (inp == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
+					System.out.println(
+							"What kind of packet would you like to duplicate?\n(0)Data Packet\n(1)ACK Packet\n");
+					inp = sc.nextInt();
+					packetType = inp;
 				}
 				// we have a valid input now
 				errorSimModeSelected = true;
 			} else {
 				System.out.println("Please enter a valid simulator mode\n");
 			}
-
 		} while (!errorSimModeSelected);
 
 		// Get error sim transfer mode
@@ -360,6 +370,10 @@ public class TFTPSim {
 
 		s.passOnTFTP(new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength));
 		sc.close();
+	}
+
+	private enum PacketType {
+		DATA, ACK, REQUEST;
 	}
 
 	/**
