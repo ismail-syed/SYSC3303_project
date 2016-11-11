@@ -139,7 +139,7 @@ public class TFTPSim {
 				System.out.println("LOST PACKET: On WRQ for packet number #" + currentPacketNumber + "\n");
 			} else if (checkToDelayPacketOnWRQ(mode, currentPacketNumber)) {
 				System.out.println(
-						"\nDELAY: Delaying packing on WRQ to the server by " + mode.getDelayLength() + " seconds \n");
+						"\nDELAY: Delaying packing on WRQ to the server by " + mode.getDelayLength() + " ms \n");
 				try {
 					Thread.sleep(mode.getDelayLength());
 				} catch (InterruptedException e1) {
@@ -218,7 +218,7 @@ public class TFTPSim {
 				System.out.println("LOST PACKET: On RRQ for packet number #" + currentPacketNumber + "\n");
 			} else if (checkToDelayPacketOnRRQ(mode, currentPacketNumber)) {
 				System.out.println(
-						"\nDELAY: Delaying packing on RRQ to the client by " + mode.getDelayLength() + " seconds \n");
+						"\nDELAY: Delaying packing on RRQ to the client by " + mode.getDelayLength() + " ms \n");
 				try {
 					Thread.sleep(mode.getDelayLength());
 				} catch (InterruptedException e1) {
