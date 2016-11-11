@@ -301,9 +301,7 @@ public class TFTPSim {
 				currentPacketNumber = 0;
 			}
 
-			System.out.println("Simulator: packet sent to the client using port " + sendSocket.getLocalPort());
-			System.out.println();
-
+			System.out.println("Simulator: packet sent to the client using port " + sendSocket.getLocalPort() + "\n");
 		} // end of loop
 
 	}
@@ -408,7 +406,7 @@ public class TFTPSim {
 			// Get delay length
 			if (errorSimMode == ErrorSimState.DELAY_PACKET || errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
 				while(true){
-					System.out.println("Enter delay length: ");
+					System.out.println("Enter delay length(ms): ");
 					if (sc.hasNextInt()){
 						delayLength = sc.nextInt();	
 						break;
