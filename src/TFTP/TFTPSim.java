@@ -1,7 +1,7 @@
 package TFTP;
 
 /**
- * The {TFTPSim} class represents a TFTP Error Simulator
+ * The {@link TFTPSim} class represents a TFTP Error Simulator
  *
  * @author Team 3000000
  * @version 3.0
@@ -14,9 +14,7 @@ import java.util.*;
 
 import TFTP.TFTPErrorSimMode.ErrorSimState;
 import TFTP.TFTPErrorSimMode.ErrorSimTransferMode;
-import TFTPPackets.ErrorPacket;
 import TFTPPackets.TFTPPacket;
-import TFTPPackets.ErrorPacket.ErrorCode;
 
 public class TFTPSim {
 
@@ -30,7 +28,12 @@ public class TFTPSim {
 	private int currentPacketNumber;
 	// helps determine when we should drop packets
 	private boolean dropPacket = false;
+	// default simulator mode
+	private static ErrorSimState errorSimMode = ErrorSimState.NORMAL;
 
+	/**
+	 * Constructor
+	 */
 	public TFTPSim() {
 		try {
 			// Construct a datagram socket and bind it to port 23
@@ -47,7 +50,14 @@ public class TFTPSim {
 		}
 	}
 
-	public void passOnTFTP(TFTPErrorSimMode errorSimMode) {
+	/**
+	 * 
+	 * Default mode is {@link ErrorSimState#NORMAL}
+	 * 
+	 * @param errorSimMode
+	 * @see {@link ErrorSimState} for the list of possible error modes
+	 */
+	public void passOnTFTP(TFTPErrorSimMode mode) {
 
 		byte[] data;
 
@@ -60,6 +70,10 @@ public class TFTPSim {
 			// 516 bytes long, the length of the byte array.
 			data = new byte[516];
 			receivePacket = new DatagramPacket(data, data.length);
+
+			// if user wants to duplicate a packet
+			if (mode.getSimState() == ErrorSimState.DUPLICATE_PACKET) {
+			}
 
 			/**
 			 * RECEIVE PACKET FROM CLIENT
@@ -109,15 +123,15 @@ public class TFTPSim {
 			 **/
 			// Check if we're in the LOST_PACKET mode and handle requests
 			// appropriately
-			if (checkToGenerateLostPacketWRQ(errorSimMode, currentPacketNumber)) {
+			if (checkToGenerateLostPacketWRQ(mode, currentPacketNumber)) {
 				// Simulate a lost by not setting sendPacket
 				dropPacket = true;
 				System.out.println("LOST PACKET: On WRQ for packet number #" + currentPacketNumber + "\n");
-			} else if (checkToDelayPacketOnWRQ(errorSimMode, currentPacketNumber)) {
-				System.out.println("\nDELAY: Delaying packing on WRQ to the server by " + errorSimMode.getDelayLength()
-						+ " seconds \n");
+			} else if (checkToDelayPacketOnWRQ(mode, currentPacketNumber)) {
+				System.out.println(
+						"\nDELAY: Delaying packing on WRQ to the server by " + mode.getDelayLength() + " seconds \n");
 				try {
-					Thread.sleep(errorSimMode.getDelayLength());
+					Thread.sleep(mode.getDelayLength());
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
@@ -186,15 +200,15 @@ public class TFTPSim {
 			 **/
 			// Check if in the LOST_PACKET mode and handle requests
 			// appropriately
-			if (checkToGenerateLostPacketOnRRQ(errorSimMode, currentPacketNumber)) {
+			if (checkToGenerateLostPacketOnRRQ(mode, currentPacketNumber)) {
 				// enable flag to know if we should drop this packet
 				dropPacket = true;
 				System.out.println("LOST PACKET: On RRQ for packet number #" + currentPacketNumber + "\n");
-			} else if (checkToDelayPacketOnRRQ(errorSimMode, currentPacketNumber)) {
-				System.out.println("\nDELAY: Delaying packing on RRQ to the client by " + errorSimMode.getDelayLength()
-						+ " seconds \n");
+			} else if (checkToDelayPacketOnRRQ(mode, currentPacketNumber)) {
+				System.out.println(
+						"\nDELAY: Delaying packing on RRQ to the client by " + mode.getDelayLength() + " seconds \n");
 				try {
-					Thread.sleep(errorSimMode.getDelayLength());
+					Thread.sleep(mode.getDelayLength());
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
@@ -278,109 +292,56 @@ public class TFTPSim {
 
 	}
 
-	/*
-	 * LOST PACKET HELPER METHODS
-	 **/
-	// Helper method to check if we are in the appropriate errorSimMode to
-	// return a lost packet response on a RRQ to the client
-	public boolean checkToGenerateLostPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return lostPacketCheck(errorSimMode, currentPacketNum)
-				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
-	}
-
-	// Helper method to check if we are in the appropriate errorSimMode to
-	// return a lost packet response on a WRQ to the client
-	public boolean checkToGenerateLostPacketWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return lostPacketCheck(errorSimMode, currentPacketNum)
-				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
-	}
-
-	// Helper method to check if currentPacketNum matches the packet number
-	// specified by the errorSimMode properties
-	public boolean lostPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return errorSimMode.getSimState() == ErrorSimState.LOST_PACKET
-				&& errorSimMode.getPacketNumer() == currentPacketNum;
-	}
-
-	/*
-	 * DELAY PACKET HELPER METHODS
-	 **/
-	// Helper method to check if we are in the appropriate errorSimMode to delay
-	// a packet response on a RRQ to the client
-	public boolean checkToDelayPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return delayPacketCheck(errorSimMode, currentPacketNum)
-				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
-	}
-
-	// Helper method to check if we are in the appropriate errorSimMode to delay
-	// a packet response on a WRQ to the client
-	public boolean checkToDelayPacketOnWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return delayPacketCheck(errorSimMode, currentPacketNum)
-				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
-	}
-
-	// Helper method to check if currentPacketNum matches the packet number
-	// specified by the errorSimMode properties
-	public boolean delayPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
-		return errorSimMode.getSimState() == ErrorSimState.DELAY_PACKET
-				&& errorSimMode.getPacketNumer() == currentPacketNum;
-	}
-
-	// Helper method to validate error sim mode inputed through console
-	private static boolean isValidErrorSimMode(int mode) {
-		return mode == 1 || mode == 2 || mode == 3;
-	}
-
-	// Helper method to validate error sim transfer mode inputed through console
-	private static boolean isValidErrorSimTransferMode(int mode) {
-		return mode == 1 || mode == 2;
-	}
-
+	/**
+	 * @param args
+	 */
 	public static void main(String[] args) {
 		TFTPSim s = new TFTPSim();
 
 		Scanner sc = new Scanner(System.in);
-		ErrorSimState errorSimMode = null;
 		ErrorSimTransferMode errorSimtransferMode = null;
 
-		int packetNumber = 0, delayLength = 0, inputErrorSimMode;
+		int packetNumber = 0, delayLength = 0;
 
 		boolean errorSimModeSelected = false, errorSimTransferModeSelected = false;
 
 		// Get error sim mode console input
-		// TODO Error checking on console input
 		do {
-			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Packet duplication");
-			inputErrorSimMode = sc.nextInt();
-
-			if (isValidErrorSimMode(inputErrorSimMode)) {
-				// Set error sim mode
-				if (inputErrorSimMode == ErrorSimState.LOST_PACKET.ordinal()) {
+			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Duplicate packet");
+			int simMode = sc.nextInt();
+			// Set error sim mode
+			if (isValidErrorSimMode(simMode)) {
+				if (simMode == ErrorSimState.NORMAL.ordinal()) {
+					errorSimMode = ErrorSimState.NORMAL;
+				} else if (simMode == ErrorSimState.LOST_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.LOST_PACKET;
-				} else if (inputErrorSimMode == ErrorSimState.DELAY_PACKET.ordinal()) {
+				} else if (simMode == ErrorSimState.DELAY_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DELAY_PACKET;
-				} else if (inputErrorSimMode == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
+				} else if (simMode == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
 				}
 				// we have a valid input now
 				errorSimModeSelected = true;
+			} else {
+				System.out.println("Please enter a valid simulator mode\n");
 			}
 
 		} while (!errorSimModeSelected);
 
 		// Get error sim transfer mode
-		// TODO Error checking on console input
 		do {
 			System.out.println("Select type of transfer: \n(1)RRQ\n(2)WRQ");
-			inputErrorSimMode = sc.nextInt();
+			int transferMode = sc.nextInt();
 
-			if (isValidErrorSimTransferMode(inputErrorSimMode)) {
-				if (inputErrorSimMode == ErrorSimTransferMode.RRQ.ordinal()) {
+			if (isValidErrorSimTransferMode(transferMode)) {
+				if (transferMode == ErrorSimTransferMode.RRQ.ordinal()) {
 					errorSimtransferMode = ErrorSimTransferMode.RRQ;
-				} else if (inputErrorSimMode == ErrorSimTransferMode.WRQ.ordinal()) {
+				} else if (transferMode == ErrorSimTransferMode.WRQ.ordinal()) {
 					errorSimtransferMode = ErrorSimTransferMode.WRQ;
 				}
 				errorSimTransferModeSelected = true;
+			} else {
+				System.out.println("Please enter a valid transfer mode\n");
 			}
 
 		} while (!errorSimTransferModeSelected);
@@ -397,10 +358,117 @@ public class TFTPSim {
 			delayLength = sc.nextInt();
 		}
 
-		// initialize simMode
-		TFTPErrorSimMode simMode = new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength);
-
-		s.passOnTFTP(simMode);
+		s.passOnTFTP(new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength));
 		sc.close();
+	}
+
+	/**
+	 * Some helper methods
+	 */
+
+	/**
+	 * 
+	 * Helper method to check if we are in the appropriate errorSimMode to
+	 * return a lost packet response on a RRQ to the client
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean checkToGenerateLostPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return lostPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
+	}
+
+	/**
+	 * 
+	 * Helper method to check if we are in the appropriate errorSimMode to
+	 * return a lost packet response on a WRQ to the client
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean checkToGenerateLostPacketWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return lostPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
+	}
+
+	/**
+	 * 
+	 * Helper method to check if currentPacketNum matches the packet number
+	 * specified by the errorSimMode properties
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean lostPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return errorSimMode.getSimState() == ErrorSimState.LOST_PACKET
+				&& errorSimMode.getPacketNumer() == currentPacketNum;
+	}
+
+	/**
+	 * 
+	 * Helper method to check if we are in the appropriate errorSimMode to delay
+	 * a packet response on a RRQ to the client
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean checkToDelayPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return delayPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
+	}
+
+	/**
+	 * 
+	 * Helper method to check if we are in the appropriate errorSimMode to delay
+	 * a packet response on a WRQ to the client
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean checkToDelayPacketOnWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return delayPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
+	}
+
+	/**
+	 * 
+	 * Helper method to check if currentPacketNum matches the packet number
+	 * specified by the errorSimMode properties
+	 * 
+	 * @param errorSimMode
+	 * @param currentPacketNum
+	 * @return
+	 */
+	public boolean delayPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return errorSimMode.getSimState() == ErrorSimState.DELAY_PACKET
+				&& errorSimMode.getPacketNumer() == currentPacketNum;
+	}
+
+	/**
+	 * Helper method to validate error sim mode inputted through console
+	 * 
+	 * @param mode
+	 * @return True if mode is in the error mode set
+	 */
+	private static boolean isValidErrorSimMode(int mode) {
+		return mode == 0 || mode == 1 || mode == 2 || mode == 3;
+	}
+
+	/**
+	 * 
+	 * Helper method to validate error sim transfer mode inputted through
+	 * console
+	 * 
+	 * @param mode
+	 * @return True if mode is in the transfer mode set
+	 */
+	private static boolean isValidErrorSimTransferMode(int mode) {
+		return mode == 1 || mode == 2;
 	}
 }
