@@ -66,7 +66,7 @@ public class TFTPReader {
      * @return the block associated with the block number
      * @since 1.0
      */
-    public byte[] getFileBlock(int blockNumber) throws Exception {
+    public byte[] getFileBlock(int blockNumber) throws InvalidBlockNumberException {
         if (blockNumber > 0 & blockNumber <= blocksFromFile.size()) {
             return blocksFromFile.get(blockNumber);
         } else {

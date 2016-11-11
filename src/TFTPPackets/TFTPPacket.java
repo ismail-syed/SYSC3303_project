@@ -3,7 +3,6 @@ package TFTPPackets;
 import Exceptions.PacketOverflowException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,9 +82,9 @@ public class TFTPPacket {
      * @param ba the byte array to append to the packetByteArrayOutputStream
      * @since 1.0
      */
-    void addBytes(byte[] ba) throws PacketOverflowException, IOException {
-        for (int i = 0; i < ba.length; i++) {
-            addByte(ba[i]);
+    void addBytes(byte[] ba) throws PacketOverflowException {
+        for (byte aBa : ba) {
+            addByte(aBa);
         }
     }
 

@@ -1,11 +1,11 @@
 package TFTPPackets;
 
+import Exceptions.MalformedPacketException;
+import Exceptions.PacketOverflowException;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
-import Exceptions.MalformedPacketException;
-import Exceptions.PacketOverflowException;
 
 /**
  * @author Kunall Banerjee (100978717)
@@ -51,7 +51,7 @@ public class ErrorPacket extends TFTPPacket {
      * @param type
      * @param msg
      */
-    public ErrorPacket(ErrorCode type, String msg) throws IllegalArgumentException, IOException {
+    public ErrorPacket(ErrorCode type, String msg) throws IllegalArgumentException {
     	super();
         if (type == null) throw new IllegalArgumentException("Please specify an error type along with your message");
         this.errorCode = type;
@@ -72,7 +72,7 @@ public class ErrorPacket extends TFTPPacket {
         return this.errorCode;
     }
     
-    void createPacket(byte[] packetAsByteArray) throws MalformedPacketException, PacketOverflowException, IOException {
+    void createPacket(byte[] packetAsByteArray) throws MalformedPacketException, PacketOverflowException {
         StringBuilder sb = new StringBuilder();
 
         if (packetAsByteArray.length > MAX_SIZE) {
@@ -126,7 +126,7 @@ public class ErrorPacket extends TFTPPacket {
         createPacket(errorCode, msg);
     }
     
-    private void createPacket(ErrorCode type, String msg) throws IOException{
+    private void createPacket(ErrorCode type, String msg){
     		try {
                 // add first zero byte
                 this.addByte((byte) 0);
