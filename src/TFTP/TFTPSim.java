@@ -7,11 +7,14 @@ package TFTP;
  * @version 3.0
  * @since 1.0
  */
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.util.Arrays;
+import java.util.Scanner;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-
+import TFTP.TFTPErrorSimMode.ErrorSimDuplicatePacketType;
 import TFTP.TFTPErrorSimMode.ErrorSimState;
 import TFTP.TFTPErrorSimMode.ErrorSimTransferMode;
 import TFTPPackets.TFTPPacket;
@@ -306,7 +309,8 @@ public class TFTPSim {
 		TFTPSim s = new TFTPSim();
 
 		Scanner sc = new Scanner(System.in);
-		ErrorSimTransferMode errorSimtransferMode = null;
+		ErrorSimTransferMode errorSimTransferMode = null;
+		ErrorSimDuplicatePacketType errorSimDuplicatePacketType = null;
 
 		int packetNumber = 0, delayLength = 0, packetType = 0;
 
@@ -326,8 +330,7 @@ public class TFTPSim {
 					errorSimMode = ErrorSimState.DELAY_PACKET;
 				} else if (inp == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
-					System.out.println(
-							"What kind of packet would you like to duplicate?\n(0)Data Packet\n(1)ACK Packet\n");
+					System.out.println("What kind of packet would you like to duplicate?\n(0)Data Packet\n(1)ACK Packet\n");
 					inp = sc.nextInt();
 					packetType = inp;
 				}
@@ -337,38 +340,40 @@ public class TFTPSim {
 				System.out.println("Please enter a valid simulator mode\n");
 			}
 		} while (!errorSimModeSelected);
+		
+		if(!(errorSimMode == ErrorSimState.NORMAL)){
+			// Get error sim transfer mode
+			do {
+				System.out.println("Select type of transfer: \n(0)RRQ\n(1)WRQ");
+				int transferMode = sc.nextInt();
 
-		// Get error sim transfer mode
-		do {
-			System.out.println("Select type of transfer: \n(1)RRQ\n(2)WRQ");
-			int transferMode = sc.nextInt();
-
-			if (isValidErrorSimTransferMode(transferMode)) {
-				if (transferMode == ErrorSimTransferMode.RRQ.ordinal()) {
-					errorSimtransferMode = ErrorSimTransferMode.RRQ;
-				} else if (transferMode == ErrorSimTransferMode.WRQ.ordinal()) {
-					errorSimtransferMode = ErrorSimTransferMode.WRQ;
+				if (isValidErrorSimTransferMode(transferMode)) {
+					if (transferMode == ErrorSimTransferMode.RRQ.ordinal()) {
+						errorSimTransferMode = ErrorSimTransferMode.RRQ;
+					} else if (transferMode == ErrorSimTransferMode.WRQ.ordinal()) {
+						errorSimTransferMode = ErrorSimTransferMode.WRQ;
+					}
+					errorSimTransferModeSelected = true;
+				} else {
+					System.out.println("Please enter a valid transfer mode\n");
 				}
-				errorSimTransferModeSelected = true;
-			} else {
-				System.out.println("Please enter a valid transfer mode\n");
+
+			} while (!errorSimTransferModeSelected);
+
+			// Get packetNumber
+			// TODO Error checking on console input
+			System.out.println("Enter packet number: ");
+			packetNumber = sc.nextInt();
+
+			// Get delay length
+			// TODO Error checking on console input
+			if (errorSimMode == ErrorSimState.DELAY_PACKET || errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
+				System.out.println("Enter delay length: ");
+				delayLength = sc.nextInt();
 			}
-
-		} while (!errorSimTransferModeSelected);
-
-		// Get packetNumber
-		// TODO Error checking on console input
-		System.out.println("Enter packet number: ");
-		packetNumber = sc.nextInt();
-
-		// Get delay length
-		// TODO Error checking on console input
-		if (errorSimMode == ErrorSimState.DELAY_PACKET) {
-			System.out.println("Enter delay length: ");
-			delayLength = sc.nextInt();
 		}
 
-		s.passOnTFTP(new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength));
+		s.passOnTFTP(new TFTPErrorSimMode(errorSimMode, errorSimTransferMode, packetNumber, delayLength, errorSimDuplicatePacketType));
 		sc.close();
 	}
 
@@ -483,6 +488,6 @@ public class TFTPSim {
 	 * @return True if mode is in the transfer mode set
 	 */
 	private static boolean isValidErrorSimTransferMode(int mode) {
-		return mode == 1 || mode == 2;
+		return mode == 0 || mode == 1;
 	}
 }
