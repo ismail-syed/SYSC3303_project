@@ -142,6 +142,7 @@ public class TFTPSim {
 						"\nDELAY: Delaying packing on WRQ to the server by " + mode.getDelayLength() + " ms \n");
 				try {
 					Thread.sleep(mode.getDelayLength());
+					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
@@ -221,12 +222,12 @@ public class TFTPSim {
 						"\nDELAY: Delaying packing on RRQ to the client by " + mode.getDelayLength() + " ms \n");
 				try {
 					Thread.sleep(mode.getDelayLength());
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			}
 
 			// If were dropping this packet, we don't want to print any info
