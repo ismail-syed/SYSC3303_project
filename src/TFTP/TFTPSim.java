@@ -312,14 +312,20 @@ public class TFTPSim {
 		ErrorSimTransferMode errorSimTransferMode = null;
 		ErrorSimDuplicatePacketType errorSimDuplicatePacketType = null;
 
-		int packetNumber = 0, delayLength = 0, packetType = 0;
+		int packetNumber = 0, delayLength = 0, packetType = 0, inp, transferMode;
 
 		boolean errorSimModeSelected = false, errorSimTransferModeSelected = false;
 
 		// Get error sim mode console input
 		do {
 			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Duplicate packet");
-			int inp = sc.nextInt();
+			if (sc.hasNextInt())
+				inp = sc.nextInt();
+	        else {
+	            sc.next();
+	            continue;
+	        }
+			
 			// Set error sim mode
 			if (isValidErrorSimMode(inp)) {
 				if (inp == ErrorSimState.NORMAL.ordinal()) {
@@ -330,9 +336,22 @@ public class TFTPSim {
 					errorSimMode = ErrorSimState.DELAY_PACKET;
 				} else if (inp == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
-					System.out.println("What kind of packet would you like to duplicate?\n(0)Data Packet\n(1)ACK Packet\n");
-					inp = sc.nextInt();
-					packetType = inp;
+					while(true){
+						System.out.println("What kind of packet would you like to duplicate?\n(0)Data Packet\n(1)ACK Packet\n");
+						if (sc.hasNextInt()){
+							inp = sc.nextInt();
+							if(!isValidPacketType(inp)){
+								continue;
+							}
+							packetType = inp;
+							break;
+						}
+				        else {
+				            sc.next();
+				            continue;
+				        }	
+					}
+					
 				}
 				// we have a valid input now
 				errorSimModeSelected = true;
@@ -345,7 +364,13 @@ public class TFTPSim {
 			// Get error sim transfer mode
 			do {
 				System.out.println("Select type of transfer: \n(0)RRQ\n(1)WRQ");
-				int transferMode = sc.nextInt();
+				if (sc.hasNextInt()){
+					transferMode = sc.nextInt();
+				}
+		        else {
+		            sc.next();
+		            continue;
+		        }
 
 				if (isValidErrorSimTransferMode(transferMode)) {
 					if (transferMode == ErrorSimTransferMode.RRQ.ordinal()) {
@@ -361,15 +386,32 @@ public class TFTPSim {
 			} while (!errorSimTransferModeSelected);
 
 			// Get packetNumber
-			// TODO Error checking on console input
-			System.out.println("Enter packet number: ");
-			packetNumber = sc.nextInt();
-
+			while(true){
+				System.out.println("Enter packet number: ");
+				if (sc.hasNextInt()){
+					packetNumber = sc.nextInt();
+					break;
+				}
+		        else {
+		            sc.next();
+		            continue;
+		        }
+		
+			}
+		
 			// Get delay length
-			// TODO Error checking on console input
 			if (errorSimMode == ErrorSimState.DELAY_PACKET || errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
-				System.out.println("Enter delay length: ");
-				delayLength = sc.nextInt();
+				while(true){
+					System.out.println("Enter delay length: ");
+					if (sc.hasNextInt()){
+						delayLength = sc.nextInt();	
+						break;
+					}
+			        else {
+			            sc.next();
+			            continue;
+			        }
+				}
 			}
 		}
 
@@ -488,6 +530,18 @@ public class TFTPSim {
 	 * @return True if mode is in the transfer mode set
 	 */
 	private static boolean isValidErrorSimTransferMode(int mode) {
+		return mode == 0 || mode == 1;
+	}
+	
+	/**
+	 * 
+	 * Helper method to validate error sim  packet type for duplicate packet
+	 * error sim mode
+	 * 
+	 * @param mode
+	 * @return True if mode is in the packet mode
+	 */
+	private static boolean isValidPacketType(int mode) {
 		return mode == 0 || mode == 1;
 	}
 }
