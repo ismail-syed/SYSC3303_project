@@ -1,20 +1,11 @@
 package TFTP;
 
 /**
- * The {@link TFTP.TFTPSim} class represents a TFTP Error Simiulator
- * (based on Assignment 1 solution)
+ * The {TFTPSim} class represents a TFTP Error Simulator
  *
  * @author Team 3000000
- * @author Shasthra Ranasinghe, Ismail Syed (100923110)
- * @version 1.0
+ * @version 3.0
  */
-//TFTPSim.java
-//This class is the beginnings of an error simulator for a simple TFTP server 
-//based on UDP/IP. The simulator receives a read or write packet from a client and
-//passes it on to the server.  Upon receiving a response, it passes it on to the 
-//client.
-//One socket (23) is used to receive from the client, and another to send/receive
-//from the server.  A new socket is used for each communication back to the client.   
 
 import java.io.*;
 import java.net.*;
@@ -32,16 +23,13 @@ public class TFTPSim {
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
 	private int serverPort = 69;
-	private int requestOpCode;// used to distinguish between read and write
+	// used to distinguish between read and write
+	private int requestOpCode;
 	private boolean firstTime = true;
 	private int currentPacketNumber;
-	private TFTPPacket tftpErrorPacket;
-	private boolean dropPacket = false; // helps determine when we should drop packets
-	// console input modes
-	private static final int LOST_PACKET = 1, DELAY_PACKET = 2, DUPLICATE_PACKET = 3,
-							 TRANSFER_MODE_RRQ = 1, TRANSFER_MODE_WRQ = 2; 
-	
-	
+	// helps determine when we should drop packets
+	private boolean dropPacket = false;
+
 	public TFTPSim() {
 		try {
 			// Construct a datagram socket and bind it to port 23
@@ -64,18 +52,17 @@ public class TFTPSim {
 
 		int clientPort, fromServerLen, fromClientLen, endOfWriteDataSize;
 		currentPacketNumber = 0;
-		
+
 		// loop forever
-		for(;;) { 
-			// Construct a DatagramPacket for receiving packets. 
+		for (;;) {
+			// Construct a DatagramPacket for receiving packets.
 			// 516 bytes long, the length of the byte array.
 			data = new byte[516];
 			receivePacket = new DatagramPacket(data, data.length);
 
-			
 			/**
-				RECEIVE PACKET FROM CLIENT
-			**/
+			 * RECEIVE PACKET FROM CLIENT
+			 **/
 			System.out.println("\nSimulator: Waiting for packet from client...\n");
 			// Block until a datagram packet is received from receiveSocket.
 			try {
@@ -115,26 +102,25 @@ public class TFTPSim {
 			String received = new String(data, 0, fromClientLen);
 			System.out.println(received);
 
-			
 			/**
-				SEND DATAPACKET TO THE SERVER
-			 	Construct a DatagramPacket that is to be sent to the server on serverPort.
-			**/
-			//Check if we're in the LOST_PACKET mode and handle requests appropriately 
-			if(checkToGenerateLostPacketWRQ(errorSimMode, currentPacketNumber)){
+			 * SEND DATAPACKET TO THE SERVER Construct a DatagramPacket that is
+			 * to be sent to the server on serverPort.
+			 **/
+			// Check if we're in the LOST_PACKET mode and handle requests
+			// appropriately
+			if (checkToGenerateLostPacketWRQ(errorSimMode, currentPacketNumber)) {
 				// Simulate a lost by not setting sendPacket
 				dropPacket = true;
 				System.out.println("LOST PACKET: On WRQ for packet number #" + currentPacketNumber + "\n");
-			}
-			else if(checkToDelayPacketOnWRQ(errorSimMode, currentPacketNumber)) {
-				System.out.println("\nDELAY: Delaying packing on WRQ to the server by " +  errorSimMode.getDelayLength() + " seconds \n");
+			} else if (checkToDelayPacketOnWRQ(errorSimMode, currentPacketNumber)) {
+				System.out.println("\nDELAY: Delaying packing on WRQ to the server by " + errorSimMode.getDelayLength()
+						+ " seconds \n");
 				try {
 					Thread.sleep(errorSimMode.getDelayLength());
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-			}
-			else {
+			} else {
 				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 			}
 
@@ -146,8 +132,9 @@ public class TFTPSim {
 			System.out.println("Containing: ");
 			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
 
-			// Send the datagram packet to the server via the send/receivesocket.
-			if(!dropPacket){
+			// Send the datagram packet to the server via the
+			// send/receivesocket.
+			if (!dropPacket) {
 				try {
 					sendReceiveSocket.send(sendPacket);
 				} catch (IOException e) {
@@ -157,11 +144,10 @@ public class TFTPSim {
 			} else {
 				dropPacket = false;
 			}
-			
 
 			/**
-				RECEIVE PACKET FROM SERVER
-			**/
+			 * RECEIVE PACKET FROM SERVER
+			 **/
 			// Construct a DatagramPacket for receiving packets up
 			// to 516 bytes long (the length of the byte array).
 			data = new byte[516];
@@ -176,14 +162,15 @@ public class TFTPSim {
 				System.exit(1);
 			}
 
-			// keep track of the packet numbers being sent back to the client from the server
-			currentPacketNumber++; 
-			
+			// keep track of the packet numbers being sent back to the client
+			// from the server
+			currentPacketNumber++;
+
 			if (data[1] == (byte) 5)
 				firstTime = true;
-			
+
 			// Process the received datagram.
-			System.out.println("Simulator: Packet "+ currentPacketNumber +" received from server.");
+			System.out.println("Simulator: Packet " + currentPacketNumber + " received from server.");
 			System.out.println("From host: " + receivePacket.getAddress());
 			serverPort = receivePacket.getPort();
 			System.out.println("Host port: " + serverPort);
@@ -192,30 +179,30 @@ public class TFTPSim {
 			System.out.println("Containing: ");
 			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
 
-			
 			/**
-				SEND PACKET TO THE CLIENT
-			 	Construct a DatagramPacket that is to be sent to the client on serverPort.
-			**/
-			//Check if were in the LOST_PACKET mode and handle requests appropriately 
-			if(checkToGenerateLostPacketOnRRQ(errorSimMode, currentPacketNumber)){
+			 * SEND PACKET TO THE CLIENT Construct a DatagramPacket that is to
+			 * be sent to the client on serverPort.
+			 **/
+			// Check if in the LOST_PACKET mode and handle requests
+			// appropriately
+			if (checkToGenerateLostPacketOnRRQ(errorSimMode, currentPacketNumber)) {
 				// enable flag to know if we should drop this packet
 				dropPacket = true;
 				System.out.println("LOST PACKET: On RRQ for packet number #" + currentPacketNumber + "\n");
-			}
-			else if(checkToDelayPacketOnRRQ(errorSimMode, currentPacketNumber)) {
-				System.out.println("\nDELAY: Delaying packing on RRQ to the client by " +  errorSimMode.getDelayLength() + " seconds \n");
+			} else if (checkToDelayPacketOnRRQ(errorSimMode, currentPacketNumber)) {
+				System.out.println("\nDELAY: Delaying packing on RRQ to the client by " + errorSimMode.getDelayLength()
+						+ " seconds \n");
 				try {
 					Thread.sleep(errorSimMode.getDelayLength());
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-			}
-			else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);	
+			} else {
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
+						clientPort);
 			}
 
-			System.out.println("Simulator: Sending packet "+ currentPacketNumber +" to client.");
+			System.out.println("Simulator: Sending packet " + currentPacketNumber + " to client.");
 			System.out.println("To host: " + sendPacket.getAddress());
 			System.out.println("Destination host port: " + sendPacket.getPort());
 			// fromServerLen = sendPacket.getLength();
@@ -234,17 +221,16 @@ public class TFTPSim {
 				System.exit(1);
 			}
 
-			if(!dropPacket){
+			if (!dropPacket) {
 				try {
 					sendSocket.send(sendPacket);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
-				}	
+				}
 			} else {
 				dropPacket = false;
 			}
-			
 
 			// check if its the last data block
 			if (requestOpCode == 1 && fromServerLen < 516) {
@@ -290,128 +276,130 @@ public class TFTPSim {
 		} // end of loop
 
 	}
-	
-	
+
 	/*
 	 * LOST PACKET HELPER METHODS
-	**/
-	// Helper method to check if we are in the appropriate errorSimMode to return a lost packet response on a RRQ to the client
-	public boolean checkToGenerateLostPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
-		return lostPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
-	}
-	
-	// Helper method to check if we are in the appropriate errorSimMode to return a lost packet response on a WRQ to the client
-	public boolean checkToGenerateLostPacketWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
-		return lostPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
-	}
-	
-	// Helper method to check if currentPacketNum matches the packet number specified by the errorSimMode properties
-	public boolean lostPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum){ 
-		return errorSimMode.getSimState() == ErrorSimState.LOST_PACKET && errorSimMode.getPacketNumer() == currentPacketNum;
-	}
-	
-	
-	/*
-	 * DELAY PACKET HELPER METHODS
-	**/
-	// Helper method to check if we are in the appropriate errorSimMode to delay a packet response on a RRQ to the client
-	public boolean checkToDelayPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
-		return delayPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
-	}
-	
-	// Helper method to check if we are in the appropriate errorSimMode to delay a packet response on a WRQ to the client
-	public boolean checkToDelayPacketOnWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum){
-		return delayPacketCheck(errorSimMode, currentPacketNum) && errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
+	 **/
+	// Helper method to check if we are in the appropriate errorSimMode to
+	// return a lost packet response on a RRQ to the client
+	public boolean checkToGenerateLostPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return lostPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
 	}
 
-	// Helper method to check if currentPacketNum matches the packet number specified by the errorSimMode properties
-	public boolean delayPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum){ 
-		return errorSimMode.getSimState() == ErrorSimState.DELAY_PACKET && errorSimMode.getPacketNumer() == currentPacketNum;
+	// Helper method to check if we are in the appropriate errorSimMode to
+	// return a lost packet response on a WRQ to the client
+	public boolean checkToGenerateLostPacketWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return lostPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
 	}
-	
+
+	// Helper method to check if currentPacketNum matches the packet number
+	// specified by the errorSimMode properties
+	public boolean lostPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return errorSimMode.getSimState() == ErrorSimState.LOST_PACKET
+				&& errorSimMode.getPacketNumer() == currentPacketNum;
+	}
+
+	/*
+	 * DELAY PACKET HELPER METHODS
+	 **/
+	// Helper method to check if we are in the appropriate errorSimMode to delay
+	// a packet response on a RRQ to the client
+	public boolean checkToDelayPacketOnRRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return delayPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.RRQ;
+	}
+
+	// Helper method to check if we are in the appropriate errorSimMode to delay
+	// a packet response on a WRQ to the client
+	public boolean checkToDelayPacketOnWRQ(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return delayPacketCheck(errorSimMode, currentPacketNum)
+				&& errorSimMode.getTransferMode() == ErrorSimTransferMode.WRQ;
+	}
+
+	// Helper method to check if currentPacketNum matches the packet number
+	// specified by the errorSimMode properties
+	public boolean delayPacketCheck(TFTPErrorSimMode errorSimMode, int currentPacketNum) {
+		return errorSimMode.getSimState() == ErrorSimState.DELAY_PACKET
+				&& errorSimMode.getPacketNumer() == currentPacketNum;
+	}
+
 	// Helper method to validate error sim mode inputed through console
-	private static boolean isValidErrorSimMode(int mode){
+	private static boolean isValidErrorSimMode(int mode) {
 		return mode == 1 || mode == 2 || mode == 3;
 	}
-	
+
 	// Helper method to validate error sim transfer mode inputed through console
-	private static boolean isValidErrorSimTransferMode(int mode){
-		return mode == 1 || mode == 2 ;
+	private static boolean isValidErrorSimTransferMode(int mode) {
+		return mode == 1 || mode == 2;
 	}
-	
-	public static void main(String args[]) {
+
+	public static void main(String[] args) {
 		TFTPSim s = new TFTPSim();
-		
-		Scanner scanner = new Scanner(System.in);
+
+		Scanner sc = new Scanner(System.in);
 		ErrorSimState errorSimMode = null;
 		ErrorSimTransferMode errorSimtransferMode = null;
-		
-		int packetNumber = 0, 
-			delayLength = 0, 
-			inputErrorSimMode; 
-		
-		boolean errorSimModeSelected = false, 
-				errorSimTransferModeSeleted = false;
-		
+
+		int packetNumber = 0, delayLength = 0, inputErrorSimMode;
+
+		boolean errorSimModeSelected = false, errorSimTransferModeSelected = false;
+
 		// Get error sim mode console input
 		// TODO Error checking on console input
 		do {
-			System.out.println("Select Error Simulator mode: \n(1)Lost a packet.\n(2)Delay a packet\n(3)Duplicate a packet.");
-			inputErrorSimMode = scanner.nextInt();
-			
-			if(isValidErrorSimMode(inputErrorSimMode)){
+			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Packet duplication");
+			inputErrorSimMode = sc.nextInt();
+
+			if (isValidErrorSimMode(inputErrorSimMode)) {
 				// Set error sim mode
-				if(inputErrorSimMode == LOST_PACKET){
+				if (inputErrorSimMode == ErrorSimState.LOST_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.LOST_PACKET;
-				}else if(inputErrorSimMode == DELAY_PACKET){
+				} else if (inputErrorSimMode == ErrorSimState.DELAY_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DELAY_PACKET;
-				}else if(inputErrorSimMode == DUPLICATE_PACKET){
+				} else if (inputErrorSimMode == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
 				}
-				
 				// we have a valid input now
-				errorSimModeSelected = true; 
+				errorSimModeSelected = true;
 			}
-			
-		} while(!errorSimModeSelected);
-		
-		
+
+		} while (!errorSimModeSelected);
+
 		// Get error sim transfer mode
 		// TODO Error checking on console input
 		do {
-			System.out.println("Select Error Simulator transfer mode: \n(1)RRQ.\n(2)WRQ");
-			inputErrorSimMode = scanner.nextInt();
-			
-			if(isValidErrorSimTransferMode(inputErrorSimMode)){
-				if(inputErrorSimMode == TRANSFER_MODE_RRQ){
+			System.out.println("Select type of transfer: \n(1)RRQ\n(2)WRQ");
+			inputErrorSimMode = sc.nextInt();
+
+			if (isValidErrorSimTransferMode(inputErrorSimMode)) {
+				if (inputErrorSimMode == ErrorSimTransferMode.RRQ.ordinal()) {
 					errorSimtransferMode = ErrorSimTransferMode.RRQ;
-				} else if(inputErrorSimMode == TRANSFER_MODE_WRQ){
+				} else if (inputErrorSimMode == ErrorSimTransferMode.WRQ.ordinal()) {
 					errorSimtransferMode = ErrorSimTransferMode.WRQ;
 				}
-				errorSimTransferModeSeleted = true;
+				errorSimTransferModeSelected = true;
 			}
-			
-		} while(!errorSimTransferModeSeleted);
-		
-		
+
+		} while (!errorSimTransferModeSelected);
+
 		// Get packetNumber
 		// TODO Error checking on console input
 		System.out.println("Enter packet number: ");
-		packetNumber = scanner.nextInt();			
-		
-			
+		packetNumber = sc.nextInt();
+
 		// Get delay length
 		// TODO Error checking on console input
-		if(errorSimMode == ErrorSimState.DELAY_PACKET){
+		if (errorSimMode == ErrorSimState.DELAY_PACKET) {
 			System.out.println("Enter delay length: ");
-			delayLength = scanner.nextInt();			
+			delayLength = sc.nextInt();
 		}
-							
-		
+
 		// initialize simMode
-		TFTPErrorSimMode simMode = new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength); 
-		
-		
+		TFTPErrorSimMode simMode = new TFTPErrorSimMode(errorSimMode, errorSimtransferMode, packetNumber, delayLength);
+
 		s.passOnTFTP(simMode);
+		sc.close();
 	}
 }
