@@ -149,16 +149,18 @@ public class TFTPSim {
 				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 			}
 
-			System.out.println("Simulator: Sending packet to server.");
-			System.out.println("To host: " + sendPacket.getAddress());
-			System.out.println("Destination host port: " + sendPacket.getPort());
-			// fromClientLen = sendPacket.getLength();
-			System.out.println("Length: " + fromClientLen);
-			System.out.println("Containing: ");
-			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
-
-			// Send the datagram packet to the server via the
-			// send/receivesocket.
+			// If were dropping this packet, we don't want to print any info
+			if(!dropPacket){
+				System.out.println("Simulator: Sending packet to server.");
+				System.out.println("To host: " + sendPacket.getAddress());
+				System.out.println("Destination host port: " + sendPacket.getPort());
+				// fromClientLen = sendPacket.getLength();
+				System.out.println("Length: " + fromClientLen);
+				System.out.println("Containing: ");
+				System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
+			}
+			
+			// Send the datagram packet to the server via the send/receivesocket.
 			if (!dropPacket) {
 				try {
 					sendReceiveSocket.send(sendPacket);
@@ -227,14 +229,17 @@ public class TFTPSim {
 						clientPort);
 			}
 
-			System.out.println("Simulator: Sending packet " + currentPacketNumber + " to client.");
-			System.out.println("To host: " + sendPacket.getAddress());
-			System.out.println("Destination host port: " + sendPacket.getPort());
-			// fromServerLen = sendPacket.getLength();
-			System.out.println("Length: " + fromServerLen);
-			System.out.println("Containing: ");
-			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
-
+			// If were dropping this packet, we don't want to print any info
+			if(!dropPacket){
+				System.out.println("Simulator: Sending packet " + currentPacketNumber + " to client.");
+				System.out.println("To host: " + sendPacket.getAddress());
+				System.out.println("Destination host port: " + sendPacket.getPort());
+				// fromServerLen = sendPacket.getLength();
+				System.out.println("Length: " + fromServerLen);
+				System.out.println("Containing: ");
+				System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
+			}
+			
 			// Send the datagram packet to the client via a new socket.
 			try {
 				// Construct a new datagram socket and bind it to any port
