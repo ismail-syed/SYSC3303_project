@@ -240,6 +240,8 @@ public class TFTPClient {
 																							// available
 					// write the data you just received
 					tftpWriter.writeToFile(dataPacket.getData());
+					previousBlockNumber = dataPacket.getBlockNumber();
+					// update previous block number
 					// create an ack packet from corresponding block number
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 					sendPacketToServer(tftpPacket, receivePacket.getAddress(), receivePacket.getPort());
