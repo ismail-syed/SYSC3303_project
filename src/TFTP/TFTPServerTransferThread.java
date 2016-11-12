@@ -11,10 +11,7 @@ import TFTPPackets.ErrorPacket.ErrorCode;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
@@ -35,22 +32,31 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
 
 public class TFTPServerTransferThread implements Runnable {
 
-    private static final int SOCKET_TIMEOUT_MS = 10000;
-    private String filePath;
-    private boolean verbose; //verbose or quiet
+    private static final int SOCKET_TIMEOUT_MS = 1000;
+    private final String filePath;
+    private final boolean verbose; //verbose or quiet
     private int previousBlockNumber; //keeps track of the block numbers to ensure blocks received are in order
     private Boolean allowTransfers;
+    private volatile Boolean receivedRRQPacket;
+    private volatile Boolean receivedWRQPacket;
+    private DataPacket lastDataPacketSent;
     private DatagramPacket packetFromClient;
     private DatagramSocket sendReceiveSocket;
     private TFTPReader tftpReader;
     private TFTPWriter tftpWriter;
-    private byte dataBuffer[] = new byte[MAX_SIZE];
+    private final byte dataBuffer[] = new byte[MAX_SIZE];
+    private final InetAddress clientAddress;
+    private final int clientPort;
 
     public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath, boolean verbose) {
         this.packetFromClient = packetFromClient;
         this.filePath = filePath;
         this.verbose = verbose;
         this.allowTransfers = true;
+        this.receivedRRQPacket = false;
+        this.receivedWRQPacket = false;
+        this.clientAddress = packetFromClient.getAddress();
+        this.clientPort = packetFromClient.getPort();
         try {
             sendReceiveSocket = new DatagramSocket();
             //set a timeout of 10s
@@ -95,119 +101,144 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void processReadPacket(byte[] packetData) throws IOException {
-        verboseLog("****************NEW TRANSFER****************\n");
-        verboseLog("Opcode: READ");
-        try {
-            //Parse RRQ packet
-            RRQPacket rrqPacket = new RRQPacket(packetData);
-            //Read from File
-            tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
-            //Create DATA packet with first block of file
-            System.out.println("Sending block 1");
-            previousBlockNumber = 1;
-            sendPacketToClient(new DataPacket(1, tftpReader.getFileBlock(1)));
-        } catch (NoSuchFileException | FileNotFoundException e) {
-            System.out.println("File not found");
-            sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "File not found"));
-        } catch (AccessDeniedException e) {
-            System.out.println("Access Violation");
-            sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
-        } catch (PacketOverflowException | MalformedPacketException | InvalidBlockNumberException e) {
-            e.printStackTrace();
+        if (!receivedRRQPacket && !receivedWRQPacket) {
+            receivedRRQPacket = true;
+            verboseLog("****************NEW TRANSFER****************\n");
+            verboseLog("Opcode: READ");
+            try {
+                //Parse RRQ packet
+                RRQPacket rrqPacket = new RRQPacket(packetData);
+                //Read from File
+                tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
+                //Create DATA packet with first block of file
+                System.out.println("Sending block 1");
+                previousBlockNumber = 1;
+                sendPacketToClient(new DataPacket(1, tftpReader.getFileBlock(1)));
+            } catch (NoSuchFileException | FileNotFoundException e) {
+                System.out.println("File not found");
+                sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "File not found"));
+            } catch (AccessDeniedException e) {
+                System.out.println("Access Violation");
+                sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
+            } catch (PacketOverflowException | MalformedPacketException | InvalidBlockNumberException e) {
+                e.printStackTrace();
+            }
+        } else {
+            verboseLog("Dropping duplicate RRQ packet");
         }
     }
 
     private void processWritePacket(byte[] packetData) throws IOException {
-        verboseLog("****************NEW TRANSFER****************\n");
-        verboseLog("Opcode: WRITE");
-        try {
-            //Parse WRQ packet
-            WRQPacket wrqPacket = new WRQPacket(packetData);
-            //Open file
-            File file = new File(filePath + wrqPacket.getFilename());
-            if (file.exists()) {
-                // handle file output already exists
-                throw new FileAlreadyExistsException("File already exist");
+        if (!receivedRRQPacket && !receivedWRQPacket) {
+            receivedWRQPacket = true;
+            verboseLog("****************NEW TRANSFER****************\n");
+            verboseLog("Opcode: WRITE");
+            try {
+                //Parse WRQ packet
+                WRQPacket wrqPacket = new WRQPacket(packetData);
+                //Open file
+                File file = new File(filePath + wrqPacket.getFilename());
+                if (file.exists()) {
+                    // handle file output already exists
+                    throw new FileAlreadyExistsException("File already exist");
+                }
+                tftpWriter = new TFTPWriter(file.getPath(), false);
+                //Send ACK packet with block number 0
+                verboseLog("Sending ACK with block 0");
+                sendPacketToClient(new ACKPacket(0));
+                previousBlockNumber = 0;
+            } catch (FileAlreadyExistsException e) {
+                System.out.println("File already Exist");
+                sendPacketToClient(new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS, "File already exists"));
+            } catch (FileNotFoundException e) {
+                System.out.println(e.getMessage());
+                String errMessage = e.getMessage();
+                if (errMessage.contains("(Access is denied)")) {
+                    System.out.println("Access Violation");
+                    sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
+                } else {
+                    throw e;
+                }
+            } catch (InvalidBlockNumberException | PacketOverflowException | MalformedPacketException e) {
+                e.printStackTrace();
             }
-            tftpWriter = new TFTPWriter(file.getPath(), false);
-            //Send ACK packet with block number 0
-            verboseLog("Sending ACK with block 0");
-            sendPacketToClient(new ACKPacket(0));
-            previousBlockNumber = 0;
-        } catch (FileAlreadyExistsException e) {
-            System.out.println("File already Exist");
-            sendPacketToClient(new ErrorPacket(ErrorCode.FILE_ALREADY_EXISTS, "File already exists"));
-        } catch (FileNotFoundException e) {
-            System.out.println(e.getMessage());
-            String errMessage = e.getMessage();
-            if (errMessage.contains("(Access is denied)")) {
-                System.out.println("Access Violation");
-                sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
-            } else {
-                throw e;
-            }
-        } catch (InvalidBlockNumberException | PacketOverflowException | MalformedPacketException e) {
-            e.printStackTrace();
+        } else {
+            verboseLog("Dropping duplicate WRQ packet");
         }
     }
 
     private void processDataPacket(byte[] packetData) throws IOException {
-        verboseLog("Opcode: DATA");
-        try {
-            //Parse DATA packet
-            DataPacket dataPacket = new DataPacket(packetData);
-            //Write the data from the DATA packet
-            if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
-                throw new InvalidBlockNumberException("Data is out of order");
+        if (receivedWRQPacket) {
+            verboseLog("Opcode: DATA");
+            try {
+                //Parse DATA packet
+                DataPacket dataPacket = new DataPacket(packetData);
+                //Write the data from the DATA packet
+                if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
+                    throw new InvalidBlockNumberException("Data is out of order");
+                }
+                tftpWriter.writeToFile(dataPacket.getData());
+                previousBlockNumber = dataPacket.getBlockNumber();
+                //Create an ACK packet for corresponding block number
+                verboseLog("Sending ACK with block " + previousBlockNumber);
+                sendPacketToClient(new ACKPacket(previousBlockNumber));
+                if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
+                    //transfer finished for WRQ
+                    tftpWriter.closeHandle();
+                    endTransfer();
+                }
+            } catch (IOException e) {
+                String errorMessage = e.getMessage();
+                switch (errorMessage) {
+                    case "There is not enough space on the disk":
+                        System.out.println("Disk full");
+                        sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
+                        break;
+                    case "The device is not ready":  // thrown when storage is removed during transfer
+                        System.out.println("Access Violation");
+                        sendPacketToClient(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"));
+                        break;
+                    default:
+                        throw e;
+                }
+            } catch (InvalidBlockNumberException | MalformedPacketException | PacketOverflowException e) {
+                e.printStackTrace();
             }
-            tftpWriter.writeToFile(dataPacket.getData());
-            previousBlockNumber = dataPacket.getBlockNumber();
-            //Create an ACK packet for corresponding block number
-            verboseLog("Sending ACK with block " + previousBlockNumber);
-            sendPacketToClient(new ACKPacket(previousBlockNumber));
-            if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
-                //transfer finished for WRQ
-                tftpWriter.closeHandle();
-                endTransfer();
-            }
-        } catch (IOException e) {
-            String errorMessage = e.getMessage();
-            switch (errorMessage) {
-                case "There is not enough space on the disk":
-                    System.out.println("Disk full");
-                    sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
-                    break;
-                case "The device is not ready":  // thrown when storage is removed during transfer
-                    System.out.println("Access Violation");
-                    sendPacketToClient(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"));
-                    break;
-                default:
-                    throw e;
-            }
-        } catch (InvalidBlockNumberException | MalformedPacketException | PacketOverflowException e) {
-            e.printStackTrace();
+        } else {
+            verboseLog("Received DATA packet without receiving a RRQ packet first");
+            verboseLog("Dropping DATA packet");
         }
     }
 
     private void processACKPacket(byte[] packetData) throws IOException {
-        verboseLog("Opcode: ACK");
-        try {
-            //Parse ACK packet
-            ACKPacket ackPacket = new ACKPacket(packetData);
-            if (ackPacket.getBlockNumber() != previousBlockNumber) {
-                throw new InvalidBlockNumberException("Data is out of order");
+        if (receivedRRQPacket) {
+            verboseLog("Opcode: ACK");
+            try {
+                //Parse ACK packet
+                ACKPacket ackPacket = new ACKPacket(packetData);
+                if (ackPacket.getBlockNumber() == previousBlockNumber - 1) {
+                    //received duplicate ACK drop the ACK packet
+                    verboseLog("Dropping duplicate ACK packet");
+                } else {
+                    if (ackPacket.getBlockNumber() != previousBlockNumber) {
+                        throw new InvalidBlockNumberException("Data is out of order");
+                    }
+                    previousBlockNumber = ackPacket.getBlockNumber() + 1;
+                    //Send next block of file until there are no more blocks
+                    if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
+                        System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        sendPacketToClient(new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber)));
+                    }
+                    if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
+                        endTransfer();
+                    }
+                }
+            } catch (MalformedPacketException | PacketOverflowException | InvalidBlockNumberException e) {
+                e.printStackTrace();
             }
-            previousBlockNumber = ackPacket.getBlockNumber() + 1;
-            //Send next block of file until there are no more blocks
-            if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
-                sendPacketToClient(new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber)));
-                System.out.println("Sending DATA with block " + (previousBlockNumber));
-            }
-            if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
-                endTransfer();
-            }
-        } catch (MalformedPacketException | PacketOverflowException | InvalidBlockNumberException e) {
-            e.printStackTrace();
+        } else {
+            verboseLog("Received ACK packet without receiving a WRQ packet first");
+            verboseLog("Dropping ACK packet");
         }
     }
 
@@ -215,7 +246,7 @@ public class TFTPServerTransferThread implements Runnable {
         if (allowTransfers) {
             //Send packet to client
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
-                    packetFromClient.getAddress(), packetFromClient.getPort());
+                    clientAddress, clientPort);
             //printing out information about the packet
             verboseLog("Server: Sending packet");
             verboseLog("To host: " + sendPacket.getAddress());
@@ -229,6 +260,8 @@ public class TFTPServerTransferThread implements Runnable {
             }
             if (tftpPacket instanceof ErrorPacket) {
                 endTransfer();
+            } else if (tftpPacket instanceof DataPacket) {
+                lastDataPacketSent = (DataPacket) tftpPacket;
             }
         }
     }
@@ -237,7 +270,7 @@ public class TFTPServerTransferThread implements Runnable {
         verboseLog("Closing socket");
         allowTransfers = false;
         try {
-            if(tftpWriter!=null){
+            if (tftpWriter != null) {
                 tftpWriter.closeHandle();
             }
         } catch (IOException e) {
@@ -245,8 +278,8 @@ public class TFTPServerTransferThread implements Runnable {
         }
     }
 
-    private void verboseLog(String logMessage){
-        if(verbose){
+    private void verboseLog(String logMessage) {
+        if (verbose) {
             System.out.println(logMessage);
         }
     }
@@ -254,7 +287,9 @@ public class TFTPServerTransferThread implements Runnable {
     @Override
     public void run() {
         while (allowTransfers) {
-            sendAndReceive();
+            if (!(packetFromClient.getAddress() == null)) {
+                sendAndReceive();
+            }
             try {
                 //Receive packet
                 if (allowTransfers) {
@@ -262,13 +297,20 @@ public class TFTPServerTransferThread implements Runnable {
                     sendReceiveSocket.receive(packetFromClient);
                 }
             } catch (SocketTimeoutException e) {
-                verboseLog("Client took too long to respond");
-                endTransfer();
+                verboseLog("\nClient took too long to respond");
+                if (lastDataPacketSent == null) {
+                    //This case should never happen
+                    verboseLog("Null DATA packet detected");
+                    endTransfer();
+                } else {
+                    verboseLog("Resending last DATA packet");
+                    sendPacketToClient(lastDataPacketSent);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         sendReceiveSocket.close();
-            verboseLog("Closed socket");
+        verboseLog("Closed socket");
     }
 }
