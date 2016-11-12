@@ -228,10 +228,13 @@ public class TFTPClient {
 				}
 				// create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
+				if(dataPacket.getBlockNumber() == previousBlockNumber) {
+					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+				}
+				else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
 					throw new InvalidBlockNumberException("Data is out of order");
 				}
-				if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
+				else if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
 																							// if
 																							// there
 																							// is
@@ -293,7 +296,7 @@ public class TFTPClient {
 			if(verbose) System.out.println("\nServer took too long to respond");
 			if (lastDataPacketSent == null) {
 				// This case should never happen
-				if(verbose) System.out.println("No previous DATA packet sent");
+				if(verbose) System.out.println("No previous DATA packet sent, ending transfer");
 				firstTime = true;
 			} else {
 				if(verbose) System.out.println("Resending last DATA packet");
