@@ -33,6 +33,7 @@ public class TFTPSim {
 	// default simulator mode
 	private static ErrorSimState errorSimMode = ErrorSimState.NORMAL;
 	private Opcode currentOpCode;
+	private static TFTPErrorSimMode simMode; 
 
 	/**
 	 * @param args
@@ -129,14 +130,15 @@ public class TFTPSim {
 				}
 			}
 		}
-		new TFTPSim().passOnTFTP(new TFTPErrorSimMode(errorSimMode, packetType, packetNumber, delayLength));
+		simMode = new TFTPErrorSimMode(errorSimMode, packetType, packetNumber, delayLength);
+		new TFTPSim(simMode).passOnTFTP();
 		sc.close();
 	}
 
 	/**
 	 * Constructor
 	 */
-	public TFTPSim() {
+	public TFTPSim(TFTPErrorSimMode mode) {
 		try {
 			// Construct a datagram socket and bind it to port 23
 			// on the local host machine. This socket will be used to
@@ -159,7 +161,7 @@ public class TFTPSim {
 	 * @param errorSimMode
 	 * @see {@link ErrorSimState} for the list of possible error modes
 	 */
-	public void passOnTFTP(TFTPErrorSimMode mode) {
+	public void passOnTFTP() {
 
 		byte[] data;
 
@@ -230,21 +232,21 @@ public class TFTPSim {
 			// Check if we currently satisfy the error sim mode and handle
 			// requests appropriately
 			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, mode, currentOpCode, ackPacketCounter,
+			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
 					dataPacketCounter)) {
 				// Simulate a lost by not setting sendPacket
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
-				printErrorMessage(mode, currentOpCode, ackPacketCounter, dataPacketCounter);
+				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 			}
 			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, mode, currentOpCode, ackPacketCounter,
+			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
 					dataPacketCounter)) {
-				System.out.println("DELAYING PACKET for " + mode.getDelayLength() + " ms... ");
+				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 						clientPort);
 				try {
-					Thread.sleep(mode.getDelayLength());
+					Thread.sleep(simMode.getDelayLength());
 					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
@@ -326,20 +328,20 @@ public class TFTPSim {
 			// Check if we currently satisfy the error sim mode and handle
 			// requests appropriately
 			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, mode, currentOpCode, ackPacketCounter,
+			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
 					dataPacketCounter)) {
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
-				printErrorMessage(mode, currentOpCode, ackPacketCounter, dataPacketCounter);
+				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 			}
 			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, mode, currentOpCode, ackPacketCounter,
+			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
 					dataPacketCounter)) {
-				System.out.println("DELAYING PACKET for " + mode.getDelayLength() + " ms... ");
+				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 						clientPort);
 				try {
-					Thread.sleep(mode.getDelayLength());
+					Thread.sleep(simMode.getDelayLength());
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
@@ -445,9 +447,7 @@ public class TFTPSim {
 	private boolean checkPacketToCreateError(ErrorSimState simStateToCheck, TFTPErrorSimMode errorSimMode,
 			Opcode opcode, int ackPacketNum, int dataPacketNum) {
 		if (errorSimMode.getSimState() == simStateToCheck && errorSimMode.getPacketType() == opcode) {
-			if (opcode == Opcode.READ)
-				return true;
-			if (opcode == Opcode.WRITE)
+			if (opcode == Opcode.READ || opcode == Opcode.WRITE)
 				return true;
 
 			// get the right packet number to operate on
