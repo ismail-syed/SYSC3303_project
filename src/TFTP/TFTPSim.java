@@ -23,7 +23,7 @@ public class TFTPSim {
 	// UDP datagram packets and sockets used to send / receive
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
-	private int serverPort = 69;
+	
 	// used to distinguish between read and write
 	private int requestOpCode;
 	private boolean firstTime = true;
@@ -34,7 +34,13 @@ public class TFTPSim {
 	private static ErrorSimState errorSimMode = ErrorSimState.NORMAL;
 	private Opcode currentOpCode;
 	private static TFTPErrorSimMode simMode; 
-
+	
+	private String sentPacketTo;
+	
+	// Ports
+	private int serverPort = 69;
+	private int clientPort; 
+	
 	/**
 	 * @param args
 	 */
@@ -141,12 +147,9 @@ public class TFTPSim {
 	public TFTPSim(TFTPErrorSimMode mode) {
 		try {
 			// Construct a datagram socket and bind it to port 23
-			// on the local host machine. This socket will be used to
-			// receive UDP Datagram packets from clients.
 			receiveSocket = new DatagramSocket(23);
+			
 			// Construct a datagram socket and bind it to any available
-			// port on the local host machine. This socket will be used to
-			// send and receive UDP Datagram packets from the server.
 			sendReceiveSocket = new DatagramSocket();
 		} catch (SocketException se) {
 			se.printStackTrace();
@@ -165,7 +168,7 @@ public class TFTPSim {
 
 		byte[] data;
 
-		int clientPort, fromServerLen, fromClientLen, endOfWriteDataSize;
+		int fromServerLen, fromClientLen, endOfWriteDataSize;
 		ackPacketCounter = 0;
 		dataPacketCounter = 0;
 
@@ -232,27 +235,22 @@ public class TFTPSim {
 			// Check if we currently satisfy the error sim mode and handle
 			// requests appropriately
 			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
+			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
 				// Simulate a lost by not setting sendPacket
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 			}
 			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
+			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
 				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
-				try {
-					Thread.sleep(simMode.getDelayLength());
-					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
+				delayThread.start();
+				
 			} else {
 				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
+				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			}
 
 			// If we're dropping this packet, we don't want to print any info
@@ -263,21 +261,7 @@ public class TFTPSim {
 				// fromClientLen = sendPacket.getLength();
 				System.out.println("Length: " + fromClientLen);
 				System.out.println("Containing: ");
-				System.out.println(
-						"Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
-			}
-
-			// Send the datagram packet to the server via the
-			// send/receivesocket.
-			if (!dropPacket) {
-				try {
-					sendReceiveSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-			} else {
-				dropPacket = false;
+				System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
 			}
 
 			/**
@@ -325,29 +309,32 @@ public class TFTPSim {
 			 * Send packet to client
 			 **/
 
-			// Check if we currently satisfy the error sim mode and handle
-			// requests appropriately
+			// Send the datagram packet to the client via a new socket.
+			try {
+				sendSocket = new DatagramSocket();
+			} catch (SocketException se) {
+				se.printStackTrace();
+				System.exit(1);
+			}
+						
+			// Check if we currently satisfy the error sim mode and handle requests appropriately
 			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
+			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 			}
 			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
+			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
 				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
-				try {
-					Thread.sleep(simMode.getDelayLength());
-				} catch (InterruptedException e1) {
-					e1.printStackTrace();
-				}
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+
+				// Start a thread to handle the delay of this packet
+				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendSocket, sendPacket, simMode.getDelayLength()));
+				delayThread.start();
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+				sendPacketThroughSocket(sendSocket, sendPacket);
 			}
 
 			// If were dropping this packet, we don't want to print any info
@@ -358,31 +345,9 @@ public class TFTPSim {
 				// fromServerLen = sendPacket.getLength();
 				System.out.println("Length: " + fromServerLen);
 				System.out.println("Containing: ");
-				System.out.println(
-						"Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
+				System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
 			}
-
-			// Send the datagram packet to the client via a new socket.
-			try {
-				// Construct a new datagram socket and bind it to any port
-				// on the local host machine. This socket will be used to
-				// send UDP Datagram packets.
-				sendSocket = new DatagramSocket();
-			} catch (SocketException se) {
-				se.printStackTrace();
-				System.exit(1);
-			}
-
-			if (!dropPacket) {
-				try {
-					sendSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-			} else {
-				dropPacket = false;
-			}
+			
 
 			// check if its the last data block
 			if (requestOpCode == 1 && fromServerLen < 516) {
@@ -397,19 +362,12 @@ public class TFTPSim {
 					e.printStackTrace();
 					System.exit(1);
 				}
-				System.out.println("Byte Array: "
-						+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())) + "\n");
+				System.out.println("Byte Array: "+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())) + "\n");
 
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						serverPort);
-				try {
-					sendReceiveSocket.send(sendPacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-				System.out.println("Byte Array: "
-						+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, sendPacket.getLength())) + "\n");
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
+				
+				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, sendPacket.getLength())) + "\n");
 				serverPort = 69;
 				firstTime = true;
 				ackPacketCounter = 0;
@@ -428,13 +386,34 @@ public class TFTPSim {
 		} // end of loop
 
 	}
-
+	
+	
+	
 	/**
 	 * Some helper methods
 	 * 
 	 * @author Ismail Syed
 	 */
-
+	
+	/**
+	 * Helper method to send a DatagramPacket through a DatagramSocket
+	 * 
+	 */
+	protected void sendPacketThroughSocket(DatagramSocket socket, DatagramPacket packet) {
+		if(packet.getPort() == serverPort){
+			sentPacketTo = "server";
+		}else if(packet.getPort() == clientPort){
+			sentPacketTo = "client";
+		}
+		try {
+			socket.send(packet);
+			System.out.println("sent packet to " + sentPacketTo);
+		} catch (IOException e) {
+			System.out.println("IO exception while attempting to send packet");
+		}
+	}
+	
+	
 	/**
 	 * Helper method to check if the specified params meet the requirements for
 	 * the properties saved in the errorSimMode
