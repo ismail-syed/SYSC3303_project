@@ -38,7 +38,7 @@ public class TFTPServerTransferThread implements Runnable {
     private static final int SOCKET_TIMEOUT_MS = 10000;
     private String filePath;
     private boolean verbose; //verbose or quiet
-    private int previousBlockNumber; // keeps track of the block numbers to ensure blocks received are in order
+    private int previousBlockNumber; //keeps track of the block numbers to ensure blocks received are in order
     private Boolean allowTransfers;
     private DatagramPacket packetFromClient;
     private DatagramSocket sendReceiveSocket;
@@ -65,17 +65,14 @@ public class TFTPServerTransferThread implements Runnable {
             //Create byte array of proper size
             byte[] data = new byte[packetFromClient.getLength()];
             System.arraycopy(packetFromClient.getData(), 0, data, 0, data.length);
-            //Process the received datagram.
-            System.out.println("\nServer: Packet received:");
-            if (verbose) {
-                System.out.println("From host: " + packetFromClient.getAddress());
-                System.out.println("Host port: " + packetFromClient.getPort());
-                int len = packetFromClient.getLength();
-                System.out.println("Length: " + len);
-                System.out.println("Containing: ");
-                System.out.println(new String(Arrays.copyOfRange(data, 0, len)));
-                System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
-            }
+            verboseLog("\nServer: Packet received:");
+            verboseLog("From host: " + packetFromClient.getAddress());
+            verboseLog("Host port: " + packetFromClient.getPort());
+            int len = packetFromClient.getLength();
+            verboseLog("Length: " + len);
+            verboseLog("Containing: ");
+            verboseLog(new String(Arrays.copyOfRange(data, 0, len)));
+            verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
             //Get opcode
             TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
             switch (opcode) {
@@ -98,10 +95,8 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void processReadPacket(byte[] packetData) throws IOException {
-        if (verbose) {
-            System.out.println("****************NEW TRANSFER****************\n");
-        }
-        System.out.println("Opcode: READ");
+        verboseLog("****************NEW TRANSFER****************\n");
+        verboseLog("Opcode: READ");
         try {
             //Parse RRQ packet
             RRQPacket rrqPacket = new RRQPacket(packetData);
@@ -123,10 +118,8 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void processWritePacket(byte[] packetData) throws IOException {
-        if (verbose) {
-            System.out.println("****************NEW TRANSFER****************\n");
-        }
-        System.out.println("Opcode: WRITE");
+        verboseLog("****************NEW TRANSFER****************\n");
+        verboseLog("Opcode: WRITE");
         try {
             //Parse WRQ packet
             WRQPacket wrqPacket = new WRQPacket(packetData);
@@ -138,7 +131,7 @@ public class TFTPServerTransferThread implements Runnable {
             }
             tftpWriter = new TFTPWriter(file.getPath(), false);
             //Send ACK packet with block number 0
-            System.out.println("Sending ACK with block 0");
+            verboseLog("Sending ACK with block 0");
             sendPacketToClient(new ACKPacket(0));
             previousBlockNumber = 0;
         } catch (FileAlreadyExistsException e) {
@@ -159,7 +152,7 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void processDataPacket(byte[] packetData) throws IOException {
-        System.out.println("Opcode: DATA");
+        verboseLog("Opcode: DATA");
         try {
             //Parse DATA packet
             DataPacket dataPacket = new DataPacket(packetData);
@@ -170,7 +163,7 @@ public class TFTPServerTransferThread implements Runnable {
             tftpWriter.writeToFile(dataPacket.getData());
             previousBlockNumber = dataPacket.getBlockNumber();
             //Create an ACK packet for corresponding block number
-            System.out.println("Sending ACK with block " + previousBlockNumber);
+            verboseLog("Sending ACK with block " + previousBlockNumber);
             sendPacketToClient(new ACKPacket(previousBlockNumber));
             if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
                 //transfer finished for WRQ
@@ -178,11 +171,18 @@ public class TFTPServerTransferThread implements Runnable {
                 endTransfer();
             }
         } catch (IOException e) {
-            if (e.getMessage().equals("There is not enough space on the disk")) {
-                System.out.println("Disk full");
-                sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
-            } else {
-                throw e;
+            String errorMessage = e.getMessage();
+            switch (errorMessage) {
+                case "There is not enough space on the disk":
+                    System.out.println("Disk full");
+                    sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
+                    break;
+                case "The device is not ready":  // thrown when storage is removed during transfer
+                    System.out.println("Access Violation");
+                    sendPacketToClient(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"));
+                    break;
+                default:
+                    throw e;
             }
         } catch (InvalidBlockNumberException | MalformedPacketException | PacketOverflowException e) {
             e.printStackTrace();
@@ -190,7 +190,7 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void processACKPacket(byte[] packetData) throws IOException {
-        System.out.println("Opcode: ACK");
+        verboseLog("Opcode: ACK");
         try {
             //Parse ACK packet
             ACKPacket ackPacket = new ACKPacket(packetData);
@@ -217,14 +217,11 @@ public class TFTPServerTransferThread implements Runnable {
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
                     packetFromClient.getAddress(), packetFromClient.getPort());
             //printing out information about the packet
-            System.out.println("Server: Sending packet");
-            if (verbose) {
-                System.out.println("To host: " + sendPacket.getAddress());
-                System.out.println("Destination host port: " + sendPacket.getPort());
-                int length = sendPacket.getLength();
-                System.out.println("Length: " + length);
-                System.out.println("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
-            }
+            verboseLog("Server: Sending packet");
+            verboseLog("To host: " + sendPacket.getAddress());
+            verboseLog("Destination host port: " + sendPacket.getPort());
+            verboseLog("Length: " + sendPacket.getLength());
+            verboseLog("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
             try {
                 sendReceiveSocket.send(sendPacket);
             } catch (IOException e) {
@@ -237,9 +234,7 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void endTransfer() {
-        if (verbose) {
-            System.out.println("Closing socket");
-        }
+        verboseLog("Closing socket");
         allowTransfers = false;
         try {
             if(tftpWriter!=null){
@@ -247,6 +242,12 @@ public class TFTPServerTransferThread implements Runnable {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void verboseLog(String logMessage){
+        if(verbose){
+            System.out.println(logMessage);
         }
     }
 
@@ -261,19 +262,13 @@ public class TFTPServerTransferThread implements Runnable {
                     sendReceiveSocket.receive(packetFromClient);
                 }
             } catch (SocketTimeoutException e) {
-                if (verbose) {
-                    System.out.println("Client took too long to respond");
-                }
+                verboseLog("Client took too long to respond");
                 endTransfer();
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
         sendReceiveSocket.close();
-        if (verbose) {
-            if (sendReceiveSocket.isClosed()) {
-                System.out.println("Closed socket");
-            }
-        }
+            verboseLog("Closed socket");
     }
 }
