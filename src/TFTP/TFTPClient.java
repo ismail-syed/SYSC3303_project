@@ -29,7 +29,6 @@ public class TFTPClient {
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket sendReceiveSocket;
 	private int previousBlockNumber;
-	private Boolean allowTransfers;
 	private DataPacket lastDataPacketSent;
 	private static String filePath;
 	private TFTPReader tftpReader;
@@ -49,8 +48,9 @@ public class TFTPClient {
 	 * and sets a timeout
 	 */
 	public TFTPClient() {
-		allowTransfers = true;
+		lastDataPacketSent = null;
 		firstTime = true;
+		
 		try {
 			// Construct a datagram socket and bind it to any available
 			// port on the local host machine. This socket will be used to
@@ -228,7 +228,7 @@ public class TFTPClient {
 				}
 				// create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				if(dataPacket.getBlockNumber() == previousBlockNumber) {
+				if(dataPacket.getBlockNumber() <= previousBlockNumber) {
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 				}
 				else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
@@ -263,7 +263,7 @@ public class TFTPClient {
 				}
 				ACKPacket ackPacket = new ACKPacket(data);
 				// send next block of file until there are no more blocks
-				if (ackPacket.getBlockNumber() == previousBlockNumber - 1) {
+				if (ackPacket.getBlockNumber() <= previousBlockNumber - 1) {
 					// received duplicate ACK drop the ACK packet
 					if (verbose)
 						System.out.println("Dropping duplicate ACK packet");
@@ -283,6 +283,7 @@ public class TFTPClient {
 					if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
 						System.out.println("\nFile transfer complete");
 						firstTime = true;
+						lastDataPacketSent = null;
 					}
 				}
 			} else if (opcode == Opcode.ERROR) { // check for error packet and
