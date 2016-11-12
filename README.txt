@@ -129,7 +129,9 @@ FILES
 │   README.txt
 │
 ├───Images
+|	Iteration1_UML_Class_diagrams.png
 │       Iteration2_UML_Class_diagrams.png
+|	Iteration3_UML_Class_diagrams.png
 │       Timing_Diagram_Error_1.png
 │       Timing_Diagram_Error_2.png
 │       Timing_Diagram_Error_3.png
