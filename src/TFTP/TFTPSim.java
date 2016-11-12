@@ -245,10 +245,25 @@ public class TFTPSim {
 			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
 				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+				
+				// Send the duplicate packet at the specified delay time
 				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
 				delayThread.start();
 				
-			} else {
+			}
+			// DUPLICATE PACKET
+			else if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
+				// Send a packet now
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				
+				// Send the duplicate packet at the specified delay time
+				System.out.println("DUPLICATING PACKET after a delay of" + simMode.getDelayLength() + " ms... ");
+				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
+				delayThread.start();
+			}
+			// NORMAL MODE
+			else {
 				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			}
@@ -332,7 +347,20 @@ public class TFTPSim {
 				// Start a thread to handle the delay of this packet
 				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendSocket, sendPacket, simMode.getDelayLength()));
 				delayThread.start();
-			} else {
+			}
+			// DUPLICATE PACKET
+			else if(checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)){
+				// Send a packet now
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				
+				// Send the duplicate packet at the specified delay time
+				System.out.println("DUPLICATING PACKET after a delay of" + simMode.getDelayLength() + " ms... ");
+				Thread delayThread = new Thread(new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
+				delayThread.start();
+			}
+			// NORMAL MODE
+			else {
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 				sendPacketThroughSocket(sendSocket, sendPacket);
 			}
