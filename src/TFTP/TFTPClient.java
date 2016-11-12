@@ -28,6 +28,7 @@ public class TFTPClient {
 	private static final int SOCKET_TIMEOUT_MS = 1000;
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket sendReceiveSocket;
+	private int counter;
 	private int previousBlockNumber;
 	private DataPacket lastDataPacketSent;
 	private static String filePath;
@@ -50,7 +51,7 @@ public class TFTPClient {
 	public TFTPClient() {
 		lastDataPacketSent = null;
 		firstTime = true;
-		
+
 		try {
 			// Construct a datagram socket and bind it to any available
 			// port on the local host machine. This socket will be used to
@@ -79,7 +80,7 @@ public class TFTPClient {
 		String filename; // filename and mode as Strings
 		int sendPort;
 		TFTPPacket tftpPacket = new TFTPPacket();
-
+		counter = 0;
 		// In the assignment, students are told to send to 23, so just:
 		// sendPort = 23;
 		// is needed.
@@ -183,10 +184,11 @@ public class TFTPClient {
 		try {// Send the datagram packet to the server via the send/receive
 				// socket.
 			sendPacketToServer(tftpPacket, InetAddress.getLocalHost(), sendPort);
+			System.out.println("Client: Packet sent.");
+
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
-		System.out.println("Client: Packet sent.");
 	}
 
 	/**
@@ -297,8 +299,13 @@ public class TFTPClient {
 			if(verbose) System.out.println("\nServer took too long to respond");
 			if (lastDataPacketSent == null) {
 				// This case should never happen
-				if(verbose) System.out.println("No previous DATA packet sent, ending transfer");
-				firstTime = true;
+				if(verbose) System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
+				counter++;
+				if(counter == 10) {
+					System.out.println("Server took way too long to respond, ending transfer");
+					firstTime = true;
+					counter = 0;
+				}
 			} else {
 				if(verbose) System.out.println("Resending last DATA packet");
 				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
