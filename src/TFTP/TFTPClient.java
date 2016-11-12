@@ -272,11 +272,13 @@ public class TFTPClient {
 					// Send next block of file until there are no more blocks
 					if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
 						System.out.println("Sending DATA with block " + (previousBlockNumber));
+						lastDataPacketSent = new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber));
 						sendPacketToServer(
-								new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber)),
+								lastDataPacketSent,
 								receivePacket.getAddress(), receivePacket.getPort());
 					}
 					if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
+						System.out.println("\nFile transfer complete");
 						firstTime = true;
 					}
 				}
@@ -287,6 +289,16 @@ public class TFTPClient {
 				firstTime = true;
 			}
 
+		} catch (SocketTimeoutException e) {
+			if(verbose) System.out.println("\nServer took too long to respond");
+			if (lastDataPacketSent == null) {
+				// This case should never happen
+				if(verbose) System.out.println("No previous DATA packet sent");
+				firstTime = true;
+			} else {
+				if(verbose) System.out.println("Resending last DATA packet");
+				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+			}
 		} catch (Exception e) {
 			System.exit(0);
 			e.printStackTrace();
