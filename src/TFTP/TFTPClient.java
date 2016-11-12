@@ -204,6 +204,7 @@ public class TFTPClient {
 		try {
 			// Receive packet
 			sendReceiveSocket.receive(receivePacket);
+			counter = 0;
 			// Create byte array of proper size
 			data = new byte[receivePacket.getLength()];
 			System.arraycopy(dataBuffer, 0, data, 0, data.length);
