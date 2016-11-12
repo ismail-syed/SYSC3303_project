@@ -17,6 +17,7 @@ import Exceptions.PacketOverflowException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
 import TFTPPackets.*;
+import TFTPPackets.ErrorPacket.ErrorCode;
 import TFTPPackets.TFTPPacket.Opcode;
 
 /*
@@ -231,26 +232,41 @@ public class TFTPClient {
 				}
 				// create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				if(dataPacket.getBlockNumber() <= previousBlockNumber) {
+				if (dataPacket.getBlockNumber() <= previousBlockNumber) {
 					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-				}
-				else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
+				} else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
 					throw new InvalidBlockNumberException("Data is out of order");
-				}
-				else if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
-																							// if
-																							// there
-																							// is
-																							// enough
-																							// space
-																							// available
+				} else if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
+																									// if
+																									// there
+																									// is
+																									// enough
+																									// space
+																									// available
 					// write the data you just received
-					tftpWriter.writeToFile(dataPacket.getData());
-					previousBlockNumber = dataPacket.getBlockNumber();
+					try {
+						tftpWriter.writeToFile(dataPacket.getData());
+						previousBlockNumber = dataPacket.getBlockNumber();
+					} catch (IOException e) {
+						String errorMessage = e.getMessage();
+						switch (errorMessage) {
+						case "Permission denied": // thrown when directory is
+													// read only
+							System.out.println("Access Violation");
+							firstTime = true;
+							sendPacketToServer(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"),
+									receivePacket.getAddress(), receivePacket.getPort());
+							break;
+						default:
+							throw e;
+						}
+					}
 					// update previous block number
 					// create an ack packet from corresponding block number
-					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-					sendPacketToServer(tftpPacket, receivePacket.getAddress(), receivePacket.getPort());
+					if (!firstTime) {
+						tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+						sendPacketToServer(tftpPacket, receivePacket.getAddress(), receivePacket.getPort());
+					}
 					if (dataPacket.getData().length < 512) {
 						System.out.println("\nComplete File Has Been Received\n");
 						firstTime = true;
@@ -258,6 +274,8 @@ public class TFTPClient {
 					}
 				} else {
 					System.out.println("\nError Message: Disk Full or Allocation Exceded\n");
+					sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
+							receivePacket.getAddress(), receivePacket.getPort());
 					firstTime = true;
 				}
 			} else if (opcode == Opcode.ACK) {
@@ -278,10 +296,9 @@ public class TFTPClient {
 					// Send next block of file until there are no more blocks
 					if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
 						System.out.println("Sending DATA with block " + (previousBlockNumber));
-						lastDataPacketSent = new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber));
-						sendPacketToServer(
-								lastDataPacketSent,
-								receivePacket.getAddress(), receivePacket.getPort());
+						lastDataPacketSent = new DataPacket(previousBlockNumber,
+								tftpReader.getFileBlock(previousBlockNumber));
+						sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
 					}
 					if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
 						System.out.println("\nFile transfer complete");
@@ -297,19 +314,28 @@ public class TFTPClient {
 			}
 
 		} catch (SocketTimeoutException e) {
-			if(verbose) System.out.println("\nServer took too long to respond");
+			if (verbose)
+				System.out.println("\nServer took too long to respond");
 			if (lastDataPacketSent == null) {
 				// This case should never happen
-				if(verbose) System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
+				if (verbose)
+					System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
 				counter++;
-				if(counter == 10) {
+				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
 					firstTime = true;
 					counter = 0;
 				}
 			} else {
-				if(verbose) System.out.println("Resending last DATA packet");
+				if (verbose)
+					System.out.println("Resending last DATA packet");
 				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+				counter++;
+				if (counter == 10) {
+					System.out.println("Server took way too long to respond, ending transfer");
+					firstTime = true;
+					counter = 0;
+				}
 			}
 		} catch (Exception e) {
 			System.exit(0);
