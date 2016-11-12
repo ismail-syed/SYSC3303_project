@@ -173,15 +173,16 @@ public class TFTPServerTransferThread implements Runnable {
             try {
                 //Parse DATA packet
                 DataPacket dataPacket = new DataPacket(packetData);
-                //Write the data from the DATA packet
-                if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
-                    throw new InvalidBlockNumberException("Data is out of order");
+                //Write the data from the DATA packet only if it is the next block
+                if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
+                    //Write data to file
+                    tftpWriter.writeToFile(dataPacket.getData());
+                    //Save previous block number
+                    previousBlockNumber = dataPacket.getBlockNumber();
                 }
-                tftpWriter.writeToFile(dataPacket.getData());
-                previousBlockNumber = dataPacket.getBlockNumber();
-                //Create an ACK packet for corresponding block number
-                verboseLog("Sending ACK with block " + previousBlockNumber);
-                sendPacketToClient(new ACKPacket(previousBlockNumber));
+                //Create an ACK packet with the same block number as the DATA packet
+                verboseLog("Sending ACK with block " + dataPacket.getBlockNumber());
+                sendPacketToClient(new ACKPacket(dataPacket.getBlockNumber()));
                 if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
                     //transfer finished for WRQ
                     tftpWriter.closeHandle();
