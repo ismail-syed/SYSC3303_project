@@ -31,6 +31,7 @@ public class TFTPClient {
 	private DatagramSocket sendReceiveSocket;
 	private int counter;
 	private int previousBlockNumber;
+	private TFTPPacket lastRequest;
 	private DataPacket lastDataPacketSent;
 	private static String filePath;
 	private TFTPReader tftpReader;
@@ -52,7 +53,7 @@ public class TFTPClient {
 	public TFTPClient() {
 		lastDataPacketSent = null;
 		firstTime = true;
-
+		lastRequest = null;
 		try {
 			// Construct a datagram socket and bind it to any available
 			// port on the local host machine. This socket will be used to
@@ -68,16 +69,10 @@ public class TFTPClient {
 	/**
 	 * @param sc
 	 * @throws PacketOverflowException
-	 * @throws FileNotFoundException
-	 * 
-	 *             This function is run for every file transfer It asks the user
-	 *             if they want to do a read or a write request as well as if
-	 *             they want to quit or change directories. Once the information
-	 *             is give, the function will create the appropriate packet and
-	 *             send it to the server or error simulator
+	 * @throws IOException
 	 * 
 	 */
-	public void sendRequest(Scanner sc) throws PacketOverflowException, FileNotFoundException {
+	public void sendRequest(Scanner sc) throws PacketOverflowException, IOException {
 		String filename; // filename and mode as Strings
 		int sendPort;
 		TFTPPacket tftpPacket = new TFTPPacket();
@@ -147,6 +142,7 @@ public class TFTPClient {
 					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(), false);
 				} catch (IOException e) {
 					System.out.println("File doesnt Exist on Client");
+					tftpWriter.closeHandle();
 				}
 			} else if (cmd.equals("cd")) {// change directory
 				System.out.println("Enter the Directory Path:");
@@ -205,6 +201,7 @@ public class TFTPClient {
 		try {
 			// Receive packet
 			sendReceiveSocket.receive(receivePacket);
+			lastRequest = null;
 			counter = 0;
 			// Create byte array of proper size
 			data = new byte[receivePacket.getLength()];
@@ -318,8 +315,14 @@ public class TFTPClient {
 				System.out.println("\nServer took too long to respond");
 			if (lastDataPacketSent == null) {
 				// This case should never happen
-				if (verbose)
-					System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
+				if (lastRequest != null) {
+					if (verbose)
+						System.out.println("Resending last RQ packet");
+					sendPacketToServer(lastRequest, receivePacket.getAddress(), receivePacket.getPort());
+				} else {
+					if (verbose)
+						System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
+				}
 				counter++;
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
