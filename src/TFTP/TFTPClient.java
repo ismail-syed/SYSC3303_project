@@ -193,8 +193,9 @@ public class TFTPClient {
 	/**
 	 * This function deals with the actual file transfer Data, ACK and error
 	 * packets go through this function
+	 * @throws UnknownHostException 
 	 */
-	private void sendReceivePacket() {
+	private void sendReceivePacket() throws UnknownHostException {
 		byte dataBuffer[] = new byte[MAX_SIZE];
 		byte[] data = null;
 		TFTPPacket tftpPacket = new TFTPPacket();
@@ -320,7 +321,7 @@ public class TFTPClient {
 				if (lastRequest != null) {
 					if (verbose)
 						System.out.println("Resending last RQ packet");
-					sendPacketToServer(lastRequest, receivePacket.getAddress(), sendPort);
+					sendPacketToServer(lastRequest, InetAddress.getLocalHost(), sendPort);
 				} else {
 					if (verbose)
 						System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
