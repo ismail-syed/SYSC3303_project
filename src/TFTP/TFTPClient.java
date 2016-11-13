@@ -366,7 +366,10 @@ public class TFTPClient {
 	 */
 	public void sendPacketToServer(TFTPPacket tftpPacket, InetAddress address, int port) {
 		// Send packet to client
-		sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, port);
+		if(run == Mode.TEST)
+		sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, sendPort);
+		else
+			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, port);
 		// printing out information about the packet
 		if (verbose) {
 			System.out.println("\nClient: Sending packet");
