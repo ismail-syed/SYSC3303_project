@@ -32,7 +32,7 @@ public class TFTPClient {
 	private int counter;
 	private int previousBlockNumber;
 	private TFTPPacket lastRequest;
-	private DataPacket lastDataPacketSent;
+	private static DataPacket lastDataPacketSent;
 	private static String filePath;
 	private TFTPReader tftpReader;
 	private TFTPWriter tftpWriter;
@@ -303,7 +303,6 @@ public class TFTPClient {
 					if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
 						System.out.println("\nFile transfer complete");
 						firstTime = true;
-						lastDataPacketSent = null;
 					}
 				}
 			} else if (opcode == Opcode.ERROR) { // check for error packet and
@@ -450,6 +449,7 @@ public class TFTPClient {
 		while (true) {
 			try {
 				if (firstTime) {
+					lastDataPacketSent = null;
 					c.sendRequest(in);
 					firstTime = false;
 				} // if its the first time, create the RRQ/WRQ packets
