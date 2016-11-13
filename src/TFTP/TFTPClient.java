@@ -142,6 +142,7 @@ public class TFTPClient {
 					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(), false);
 				} catch (IOException e) {
 					System.out.println("File doesnt Exist on Client");
+					firstTime = true;
 					tftpWriter.closeHandle();
 				}
 			} else if (cmd.equals("cd")) {// change directory
@@ -180,6 +181,7 @@ public class TFTPClient {
 		}
 		try {// Send the datagram packet to the server via the send/receive
 				// socket.
+			lastRequest = tftpPacket;
 			sendPacketToServer(tftpPacket, InetAddress.getLocalHost(), sendPort);
 			System.out.println("Client: Packet sent.");
 
