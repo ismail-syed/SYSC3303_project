@@ -193,7 +193,8 @@ public class TFTPClient {
 	/**
 	 * This function deals with the actual file transfer Data, ACK and error
 	 * packets go through this function
-	 * @throws UnknownHostException 
+	 * 
+	 * @throws UnknownHostException
 	 */
 	private void sendReceivePacket() throws UnknownHostException {
 		byte dataBuffer[] = new byte[MAX_SIZE];
@@ -334,7 +335,10 @@ public class TFTPClient {
 			} else {
 				if (verbose)
 					System.out.println("Resending last DATA packet");
-				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+				if (run == Mode.TEST)
+					sendPacketToServer(lastDataPacketSent, InetAddress.getLocalHost(), sendPort);
+				else
+					sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
 				counter++;
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
