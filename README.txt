@@ -108,8 +108,11 @@ Ismail Syed
 ITERATION 2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Kunall Banerjee & Mohamed Zalat
-- 
+Kunall Banerjee & Ismail Syed
+- Error Simulator implementation
+- Refactoring of the entire simulator
+- Thread creation implementation
+- Designed an implemented network error simulating logic
 
 Shasthra Ranasinghe
 - Project management and coordination
@@ -118,10 +121,18 @@ Shasthra Ranasinghe
 - Git management
 
 Aritra Sengupta
-- 
+- Server side implementation
+- Refactored server code
+- Modified the server so it drops duplicate packets
+- Modified the server to resend DATA packets if it does not receive an ACK from the client
 
-Ismail Syed
-- 
+Mohamed Zalat
+- Client side implementation
+- Added resending of data packets and request to client
+- Added droping for duped acks to client
+- Added responding to duped and old data packets with ack while not writing to client
+- Added proper file handling to client
+- Debugged Sim to point out errors
 
 ========================================================================
 
