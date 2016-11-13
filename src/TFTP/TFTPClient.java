@@ -39,6 +39,7 @@ public class TFTPClient {
 	private static Mode run;
 	private static boolean firstTime;
 	private static boolean verbose;
+	private int sendPort;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -74,7 +75,6 @@ public class TFTPClient {
 	 */
 	public void sendRequest(Scanner sc) throws PacketOverflowException, IOException {
 		String filename; // filename and mode as Strings
-		int sendPort;
 		TFTPPacket tftpPacket = new TFTPPacket();
 		counter = 0;
 		// In the assignment, students are told to send to 23, so just:
@@ -320,7 +320,7 @@ public class TFTPClient {
 				if (lastRequest != null) {
 					if (verbose)
 						System.out.println("Resending last RQ packet");
-					sendPacketToServer(lastRequest, receivePacket.getAddress(), receivePacket.getPort());
+					sendPacketToServer(lastRequest, receivePacket.getAddress(), sendPort);
 				} else {
 					if (verbose)
 						System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
