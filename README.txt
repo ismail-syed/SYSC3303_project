@@ -156,7 +156,7 @@ FILES
 |	Timing_Diagram_Delay_WRQ.png
 |	Timing_Diagram_Delay_WRQ.png
 │
-└───SYSC3303_Iteration2
+└───SYSC3303_Iteration3
     │   .classpath
     │   .project
     │
