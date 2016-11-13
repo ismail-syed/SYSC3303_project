@@ -240,6 +240,18 @@ public class TFTPSim {
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
+				
+				// Since we dropped the first RRQ or WRQ request, we need wait for the second
+				firstTime = true;
+				if(currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE){
+					System.out.print("Waiting for another request...\n");
+					try {
+						receiveSocket.receive(receivePacket);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(1);
+					}
+				}
 			}
 			// DELAY PACKET
 			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
