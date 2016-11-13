@@ -410,7 +410,7 @@ public class TFTPSim {
 				System.out.println("Simulator: Waiting for packet.");
 				// Block until a datagram packet is received from receiveSocket.
 				try {
-					receiveSocket.receive(receivePacket);
+					sendSocket.receive(receivePacket);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
