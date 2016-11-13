@@ -246,6 +246,11 @@ public class TFTPSim {
 					waitTillPacketReceived(receiveSocket, receivePacket);
 					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				} else if(currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
+					System.out.println("=====> waiting at 1");
+					waitTillPacketReceived(sendSocket, receivePacket);
+					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
+					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 				}
 			}
 			// DELAY PACKET
@@ -345,6 +350,19 @@ public class TFTPSim {
 				dropPacket = true;
 				System.out.print("LOST PACKET: ");
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
+				
+				if(currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
+					System.out.println("=====> waiting at 2");
+					waitTillPacketReceived(sendReceiveSocket, receivePacket);
+					try {
+						sendSocket = new DatagramSocket();
+					} catch (SocketException se) {
+						se.printStackTrace();
+						System.exit(1);
+					}
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				}
 			}
 			// DELAY PACKET
 			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter, dataPacketCounter)) {
@@ -438,6 +456,7 @@ public class TFTPSim {
 		System.out.print("Waiting for another request...\n");
 		try {
 			socket.receive(packet);
+			System.out.println("--> packet received");
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -457,7 +476,7 @@ public class TFTPSim {
 		}
 		try {
 			socket.send(packet);
-			System.out.println("sent packet to " + sentPacketTo);
+			System.out.println("Sent packet to " + sentPacketTo);
 		} catch (IOException e) {
 			System.out.println("IO exception while attempting to send packet");
 		}
