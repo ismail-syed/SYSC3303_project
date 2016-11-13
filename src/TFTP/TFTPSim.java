@@ -361,7 +361,7 @@ public class TFTPSim {
 						System.exit(1);
 					}
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
-					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+					sendPacketThroughSocket(sendSocket, sendPacket);
 				}
 			}
 			// DELAY PACKET
@@ -410,7 +410,7 @@ public class TFTPSim {
 				System.out.println("Simulator: Waiting for packet.");
 				// Block until a datagram packet is received from receiveSocket.
 				try {
-					sendSocket.receive(receivePacket);
+					receiveSocket.receive(receivePacket);
 				} catch (IOException e) {
 					e.printStackTrace();
 					System.exit(1);
