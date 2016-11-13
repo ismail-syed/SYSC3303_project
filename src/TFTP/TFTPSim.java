@@ -242,15 +242,10 @@ public class TFTPSim {
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 				
 				// Since we dropped the first RRQ or WRQ request, we need wait for the second
-				firstTime = true;
 				if(currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE){
-					System.out.print("Waiting for another request...\n");
-					try {
-						receiveSocket.receive(receivePacket);
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.exit(1);
-					}
+					waitTillPacketReceived(receiveSocket, receivePacket);
+					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
+					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 				}
 			}
 			// DELAY PACKET
@@ -434,6 +429,21 @@ public class TFTPSim {
 	 * 
 	 * @author Ismail Syed
 	 */
+	
+	/**
+	 * Helper method to wait till a DatagramPacket is received through a DatagramSocket
+	 * 
+	 */
+	protected void waitTillPacketReceived(DatagramSocket socket, DatagramPacket packet){
+		System.out.print("Waiting for another request...\n");
+		try {
+			socket.receive(packet);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+	
 	
 	/**
 	 * Helper method to send a DatagramPacket through a DatagramSocket
