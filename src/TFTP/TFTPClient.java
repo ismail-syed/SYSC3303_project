@@ -256,6 +256,7 @@ public class TFTPClient {
 							firstTime = true;
 							sendPacketToServer(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"),
 									receivePacket.getAddress(), receivePacket.getPort());
+							tftpWriter.closeHandle();
 							break;
 						default:
 							throw e;
@@ -276,6 +277,7 @@ public class TFTPClient {
 					System.out.println("\nError Message: Disk Full or Allocation Exceded\n");
 					sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
 							receivePacket.getAddress(), receivePacket.getPort());
+					tftpWriter.closeHandle();
 					firstTime = true;
 				}
 			} else if (opcode == Opcode.ACK) {
@@ -328,6 +330,7 @@ public class TFTPClient {
 				counter++;
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
+					if(tftpWriter != null) tftpWriter.closeHandle();
 					firstTime = true;
 					counter = 0;
 				}
