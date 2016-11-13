@@ -189,7 +189,7 @@ public class TFTPSim {
 					receiveSocket.receive(receivePacket);
 					firstTime = false;
 				} else {
-					sendSocket.receive(receivePacket);
+					receiveSocket.receive(receivePacket);
 				}
 			} catch (IOException e) {
 				e.printStackTrace();
