@@ -476,7 +476,14 @@ public class TFTPSim {
 		}
 		try {
 			socket.send(packet);
-			System.out.println("Sent packet to " + sentPacketTo);
+			System.out.println("Simulator: Sent packet to " + sentPacketTo);
+			System.out.println("To host: " + packet.getAddress());
+			System.out.println("Destination host port: " + packet.getPort());
+			// fromServerLen = sendPacket.getLength();
+			System.out.println("Length: " + packet.getLength());
+			System.out.println("Containing: ");
+			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getLength())) + "\n");
+
 		} catch (IOException e) {
 			System.out.println("IO exception while attempting to send packet");
 		}
