@@ -249,7 +249,6 @@ public class TFTPSim {
 					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 				} else if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
-					System.out.println("=====> waiting at 1");
 					waitTillPacketReceived(receiveSocket, receivePacket);
 					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
 					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
@@ -363,7 +362,6 @@ public class TFTPSim {
 				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
 
 				if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
-					System.out.println("=====> waiting at 2");
 					waitTillPacketReceived(sendReceiveSocket, receivePacket);
 					try {
 						sendSocket = new DatagramSocket();
