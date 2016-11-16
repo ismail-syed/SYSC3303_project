@@ -164,8 +164,7 @@ public class TFTPSim {
 		for (;;) {
 			if (listenOnClient) {
 				handleClientSideCommunication();
-			}
-			else {
+			} else {
 				handleServerSideCommunication();
 			}
 		}
@@ -189,30 +188,37 @@ public class TFTPSim {
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
-		
+
 		// Check if we should be producing any error
-		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, receivePacket)) {
+		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
-			System.out.print("LOST PACKET: ");
+			System.out.print("1 --> LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
-			
-			// Since we dropped the first RRQ or WRQ request, we need wait for the second
+
+			// Since we dropped the first RRQ/WRQ request, we need wait for the
+			// second RRQ/WRA
 			Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE) {
-				// Since we just 'dropped' a packet, we need to listen on the client
+				// Since we just 'dropped' a packet, we need to listen on the
+				// client again
+				System.out.println("Dropped packet: Listening to Client again...");
 				waitTillPacketReceived(receiveSocket, receivePacket);
-			} 
-			else if(currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA){
+			} else if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
 				data = new byte[516];
 				receivePacket = new DatagramPacket(data, data.length);
+				System.out.println("Dropped packet: Listening to Client again...");
 				waitTillPacketReceived(receiveSocket, receivePacket);
 			}
-		} 
+		}
 		
-		// Send packet to the server
-		sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
-		sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-	
+		if(checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)){
+			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+		} else {
+			// Send packet to the server
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+			sendPacketThroughSocket(sendReceiveSocket, sendPacket);	
+		}
+		
 		// Start handling server side communications
 		listenOnClient = false;
 	}
@@ -238,10 +244,29 @@ public class TFTPSim {
 			System.exit(1);
 		}
 
-		// Send the packet
-		sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
-		sendPacketThroughSocket(sendSocket, sendPacket);
+		// Check if we should be producing any error
+		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
+			// Simulate a lost by not setting sendPacket
+			System.out.print("2 --> LOST PACKET: ");
+			printErrorMessage(simMode, receivePacket);
 
+			Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
+			if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
+				data = new byte[516];
+				receivePacket = new DatagramPacket(data, data.length);
+				System.out.println("Dropped packet: Listening to Server again...");
+				waitTillPacketReceived(sendReceiveSocket, receivePacket);
+			}
+		}
+
+		if(checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)){
+			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
+		} else {
+			// Send the packet
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			sendPacketThroughSocket(sendSocket, sendPacket);	
+		}
+		
 		// Go back to handling client side communication
 		listenOnClient = true;
 	}
@@ -306,32 +331,46 @@ public class TFTPSim {
 		}
 	}
 
+	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port){ 
+		System.out.println("1--> DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
+		sendPacket = new DatagramPacket(data, packet.getLength(), packet.getAddress(), port);
+
+		// Send the duplicate packet at the specified delay time
+		Thread delayThread = new Thread(
+				new ErrorSimDelayThread(this, socket, sendPacket, simMode.getDelayLength()));
+		delayThread.start();
+	}
+	
+	
 	/**
-	 * Helper method to check if the simStateToCheck and packet meet the requirements for
-	 * the properties saved in the errorSimMode
+	 * Helper method to check if the simStateToCheck and packet meet the
+	 * requirements for the properties saved in the errorSimMode
 	 * 
 	 * @param simStateToCheck
 	 * @param errorSimMode
 	 * @param packet
 	 * @return
 	 */
-	private boolean checkPacketToCreateError(ErrorSimState simStateToCheck, TFTPErrorSimMode errorSimMode, DatagramPacket packet) {
+	private boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
-		
-		if(Opcode.asEnum((packet.getData()[1])) == Opcode.DATA){
-			System.out.println("DATA Block Number --> " + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])) + "\n");
-		} else if(Opcode.asEnum((packet.getData()[1])) == Opcode.ACK){
-			System.out.println("ACK Block Number -->" + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])) + "\n");
+
+		if (Opcode.asEnum((packet.getData()[1])) == Opcode.DATA) {
+			System.out.println(
+					"DATA Block Number --> " + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])));
+		} else if (Opcode.asEnum((packet.getData()[1])) == Opcode.ACK) {
+			System.out.println(
+					"ACK Block Number -->" + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])));
 		}
-		
-		if (errorSimMode.getSimState() == simStateToCheck && errorSimMode.getPacketType() == currentOpCode) {
+
+		if (this.simMode.getSimState() == simStateToCheck && this.simMode.getPacketType() == currentOpCode) {
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)
 				return true;
 
-			// Get the current block number by concating the two byte values and parsing that String into an Int 
-			int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])); 
-			if(errorSimMode.getPacketNumer() == currentBlockNumber){
-				return currentBlockNumber == errorSimMode.getPacketNumer(); 
+			// Get the current block number by concating the two byte values and
+			// parsing that String into an Int
+			int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));
+			if (this.simMode.getPacketNumer() == currentBlockNumber) {
+				return currentBlockNumber == this.simMode.getPacketNumer();
 			}
 		}
 		return false;
@@ -362,7 +401,7 @@ public class TFTPSim {
 	 * Helper method to print out details about the simulated error message.
 	 */
 	private static void printErrorMessage(TFTPErrorSimMode mode, DatagramPacket packet) {
-		int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])); 
+		int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));
 		if (mode.getPacketType() == Opcode.ACK) {
 			System.out.println("On ACK packet #" + currentBlockNumber + "\n");
 		} else if (mode.getPacketType() == Opcode.DATA) {
