@@ -24,18 +24,14 @@ public class TFTPSim {
 	private DatagramPacket sendPacket, receivePacket;
 	private DatagramSocket receiveSocket, sendSocket, sendReceiveSocket;
 
-	// used to distinguish between read and write
-	private int requestOpCode;
-	private boolean firstTime = true;
-	private int ackPacketCounter, dataPacketCounter;
 	// helps determine when we should drop packets
 	private boolean dropPacket = false;
 	// default simulator mode
 	private static ErrorSimState errorSimMode = ErrorSimState.NORMAL;
-	private Opcode currentOpCode;
 	private static TFTPErrorSimMode simMode;
 
-	private String sentPacketTo;
+	private boolean listenOnClient;
+	private byte[] data;
 
 	// Ports
 	private int serverPort = 69;
@@ -64,7 +60,7 @@ public class TFTPSim {
 			// Set error sim mode
 			if (isValidErrorSimMode(inp)) {
 				if (inp == ErrorSimState.NORMAL.ordinal()) {
-					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode...");
+					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode...\n");
 					break;
 				} else if (inp == ErrorSimState.LOST_PACKET.ordinal()) {
 					errorSimMode = ErrorSimState.LOST_PACKET;
@@ -166,298 +162,15 @@ public class TFTPSim {
 	 */
 	public void passOnTFTP() {
 
-		byte[] data;
-
-		int fromServerLen, fromClientLen, endOfWriteDataSize;
-		ackPacketCounter = 0;
-		dataPacketCounter = 0;
-
-		// loop forever
+		listenOnClient = true;
 		for (;;) {
-			// Construct a DatagramPacket for receiving packets.
-			// 516 bytes long, the length of the byte array.
-			data = new byte[516];
-			receivePacket = new DatagramPacket(data, data.length);
-
-			/**
-			 * Receive packet from client
-			 */
-			System.out.println("\nSimulator: Waiting for packet from client...\n");
-			// Block until a datagram packet is received from receiveSocket.
-			try {
-				if (firstTime) {
-					receiveSocket.receive(receivePacket);
-					firstTime = false;
-				} else {
-					receiveSocket.receive(receivePacket);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
+			if (listenOnClient) {
+				handleClientSideCommunication();
 			}
-
-			if (data[1] == (byte) 1)
-				requestOpCode = 1;
-			if (data[1] == (byte) 2)
-				requestOpCode = 2;
-
-			currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
-			if (currentOpCode == Opcode.ACK) {
-				ackPacketCounter++;
-			}
-			if (currentOpCode == Opcode.DATA) {
-				dataPacketCounter++;
-			}
-
-			// process the received datagram
-			System.out.println("Simulator: Packet received from client hosted on " + receivePacket.getAddress());
-			clientPort = receivePacket.getPort();
-			System.out.println("Host port: " + clientPort);
-			// if its a data block save to size to check later
-			if (data[1] == (byte) 3) {
-				endOfWriteDataSize = receivePacket.getLength();
-			} else {
-				endOfWriteDataSize = 516;
-			}
-			fromClientLen = receivePacket.getLength();
-			System.out.println("Length: " + fromClientLen);
-			System.out.println("Containing: ");
-			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
-
-			// Form a String from the byte array, and print the string.
-			String received = new String(data, 0, fromClientLen);
-			System.out.println(received);
-
-			/**
-			 * Send packet to server
-			 **/
-
-			// Check if we currently satisfy the error sim mode and handle
-			// requests appropriately
-			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				// Simulate a lost by not setting sendPacket
-				dropPacket = true;
-				System.out.print("LOST PACKET: ");
-				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
-
-				// Since we dropped the first RRQ or WRQ request, we need wait
-				// for the second
-				if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE) {
-					waitTillPacketReceived(receiveSocket, receivePacket);
-					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
-					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-				} else if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
-					waitTillPacketReceived(receiveSocket, receivePacket);
-					sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
-					sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-				}
-			}
-			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						serverPort);
-
-				// Send the duplicate packet at the specified delay time
-				Thread delayThread = new Thread(
-						new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
-				delayThread.start();
-
-			}
-			// DUPLICATE PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				// Send a packet now
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						serverPort);
-				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-
-				// Send the duplicate packet at the specified delay time
-				System.out.println("DUPLICATING PACKET after a delay of" + simMode.getDelayLength() + " ms... ");
-				Thread delayThread = new Thread(
-						new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
-				delayThread.start();
-			}
-			// NORMAL MODE
 			else {
-				sendPacket = new DatagramPacket(data, fromClientLen, receivePacket.getAddress(), serverPort);
-				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				handleServerSideCommunication();
 			}
-
-			// If we're dropping this packet, we don't want to print any info
-			if (!dropPacket) {
-				System.out.println("Simulator: Sending packet to server.");
-				System.out.println("To host: " + sendPacket.getAddress());
-				System.out.println("Destination host port: " + sendPacket.getPort());
-				// fromClientLen = sendPacket.getLength();
-				System.out.println("Length: " + fromClientLen);
-				System.out.println("Containing: ");
-				System.out.println(
-						"Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromClientLen)) + "\n");
-			}
-
-			/**
-			 * Receive packet from server
-			 **/
-			// Construct a DatagramPacket for receiving packets up
-			// to 516 bytes long (the length of the byte array).
-			data = new byte[516];
-			receivePacket = new DatagramPacket(data, data.length);
-
-			System.out.println("Simulator: Waiting for packet from server ...");
-			try {
-				// Block until a datagram is received via sendReceiveSocket.
-				sendReceiveSocket.receive(receivePacket);
-			} catch (IOException e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
-
-			// Update the acknowledge and data packet counters appropriately
-			currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
-			if (currentOpCode == Opcode.ACK) {
-				ackPacketCounter++;
-			}
-			if (currentOpCode == Opcode.DATA) {
-				dataPacketCounter++;
-			}
-
-			if (data[1] == (byte) 5)
-				firstTime = true;
-
-			// Process the received datagram
-			System.out.println("Simulator:");
-			System.out.println("=> Acknowledge packet number: " + ackPacketCounter);
-			System.out.println("=> Data packet number: " + dataPacketCounter);
-			System.out.println("From host: " + receivePacket.getAddress());
-			serverPort = receivePacket.getPort();
-			System.out.println("Host port: " + serverPort);
-			fromServerLen = receivePacket.getLength();
-			System.out.println("Length: " + fromServerLen);
-			System.out.println("Containing: ");
-			System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
-
-			/**
-			 * Send packet to client
-			 **/
-
-			// Send the datagram packet to the client via a new socket.
-			try {
-				sendSocket = new DatagramSocket();
-			} catch (SocketException se) {
-				se.printStackTrace();
-				System.exit(1);
-			}
-
-			// Check if we currently satisfy the error sim mode and handle
-			// requests appropriately
-			// LOST PACKET
-			if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				dropPacket = true;
-				System.out.print("LOST PACKET: ");
-				printErrorMessage(simMode, currentOpCode, ackPacketCounter, dataPacketCounter);
-
-				if (currentOpCode == Opcode.ACK || currentOpCode == Opcode.DATA) {
-					waitTillPacketReceived(sendReceiveSocket, receivePacket);
-					try {
-						sendSocket = new DatagramSocket();
-					} catch (SocketException se) {
-						se.printStackTrace();
-						System.exit(1);
-					}
-					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-							clientPort);
-					sendPacketThroughSocket(sendSocket, sendPacket);
-				}
-			}
-			// DELAY PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
-
-				// Start a thread to handle the delay of this packet
-				Thread delayThread = new Thread(
-						new ErrorSimDelayThread(this, sendSocket, sendPacket, simMode.getDelayLength()));
-				delayThread.start();
-			}
-			// DUPLICATE PACKET
-			else if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, simMode, currentOpCode, ackPacketCounter,
-					dataPacketCounter)) {
-				// Send a packet now
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
-				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-
-				// Send the duplicate packet at the specified delay time
-				System.out.println("DUPLICATING PACKET after a delay of" + simMode.getDelayLength() + " ms... ");
-				Thread delayThread = new Thread(
-						new ErrorSimDelayThread(this, sendReceiveSocket, sendPacket, simMode.getDelayLength()));
-				delayThread.start();
-			}
-			// NORMAL MODE
-			else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						clientPort);
-				sendPacketThroughSocket(sendSocket, sendPacket);
-			}
-
-			// If were dropping this packet, we don't want to print any info
-			if (!dropPacket) {
-				System.out.println("Simulator: Sending packet to client.");
-				System.out.println("To host: " + sendPacket.getAddress());
-				System.out.println("Destination host port: " + sendPacket.getPort());
-				// fromServerLen = sendPacket.getLength();
-				System.out.println("Length: " + fromServerLen);
-				System.out.println("Containing: ");
-				System.out.println(
-						"Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, fromServerLen)) + "\n");
-			}
-
-			// check if its the last data block
-			if (requestOpCode == 1 && fromServerLen < 516) {
-				data = new byte[516];
-				receivePacket = new DatagramPacket(data, data.length);
-
-				System.out.println("Simulator: Waiting for packet.");
-				// Block until a datagram packet is received from receiveSocket.
-				try {
-					receiveSocket.receive(receivePacket);
-				} catch (IOException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
-				System.out.println("Byte Array: "
-						+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())) + "\n");
-
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-						serverPort);
-
-				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-				System.out.println("Byte Array: "
-						+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, sendPacket.getLength())) + "\n");
-				serverPort = 69;
-				firstTime = true;
-				ackPacketCounter = 0;
-				dataPacketCounter = 0;
-			}
-
-			// check if its the last data block
-			if (requestOpCode == 2 && endOfWriteDataSize < 516) {
-				serverPort = 69;
-				firstTime = true;
-				ackPacketCounter = 0;
-				dataPacketCounter = 0;
-			}
-
-			System.out.println("Simulator: packet sent to the client using port " + sendSocket.getLocalPort() + "\n");
-		} // end of loop
-
+		}
 	}
 
 	/**
@@ -467,12 +180,117 @@ public class TFTPSim {
 	 */
 
 	/**
+	 * Handle all the Client side communications
+	 */
+	public void handleClientSideCommunication() {
+		// Receive packet from client
+		System.out.println("\nSimulator: Waiting for packet from client...\n");
+		data = new byte[516];
+		receivePacket = new DatagramPacket(data, data.length);
+		waitTillPacketReceived(receiveSocket, receivePacket);
+		printReceivePacketInfo(receivePacket, data);
+
+		// Update the clientPort since to where the receivePacket came from
+		clientPort = receivePacket.getPort();
+
+		// Send packet to the server
+		sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+		sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+
+		// Print info
+		printSendPacketInfo(sendPacket, data);
+
+		// Start handling server side communications
+		listenOnClient = false;
+	}
+
+	/**
+	 * Handle all the Server side communications
+	 */
+	public void handleServerSideCommunication() {
+		// Receive packet from server
+		System.out.println("Simulator: Waiting for packet from server...");
+		data = new byte[516];
+		receivePacket = new DatagramPacket(data, data.length);
+		waitTillPacketReceived(sendReceiveSocket, receivePacket);
+		printReceivePacketInfo(receivePacket, data);
+
+		// Update the server port since to where the receivePacket came from
+		serverPort = receivePacket.getPort();
+
+		// Send packet to client via a new socket
+		try {
+			sendSocket = new DatagramSocket();
+		} catch (SocketException se) {
+			se.printStackTrace();
+			System.exit(1);
+		}
+
+		// Send the packet
+		sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+		sendPacketThroughSocket(sendSocket, sendPacket);
+		printSendPacketInfo(sendPacket, data);
+
+		// Go back to handling client side communication
+		listenOnClient = true;
+	}
+
+	/**
+	 * Helper method to determine if were on the
+	 * 
+	 * @param packet
+	 * @return
+	 */
+	private String getPacketOwner(DatagramPacket packet) {
+		String str = new String();
+		if (packet.getPort() == serverPort) {
+			str = "server";
+		} else if (packet.getPort() == clientPort) {
+			str = "client";
+		} else {
+			str = "ERROR";
+		}
+		return str;
+	}
+
+	/**
+	 * A helper method to print out the details associated with receiving packet
+	 * info
+	 * 
+	 * @param packet
+	 * @param data
+	 */
+	private void printReceivePacketInfo(DatagramPacket packet, byte[] data) {
+		System.out.println("Simulator: Packet received from " + getPacketOwner(packet));
+		System.out.println("From host: " + packet.getAddress());
+		System.out.println("Length: " + packet.getLength());
+		System.out.println("Containing: ");
+		System.out
+				.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+	}
+
+	/**
+	 * A helper method to print out the details associated with sending packet
+	 * info
+	 * 
+	 * @param packet
+	 * @param data
+	 */
+	private void printSendPacketInfo(DatagramPacket packet, byte[] data) {
+		System.out.println("Simulator: Sent packet to " + getPacketOwner(packet));
+		System.out.println("To host: " + packet.getAddress());
+		System.out.println("Destination host port: " + packet.getPort());
+		System.out.println("Length: " + packet.getLength());
+		System.out.println("Containing Byte Array: "
+				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+	}
+
+	/**
 	 * Helper method to wait till a DatagramPacket is received through a
 	 * DatagramSocket
 	 * 
 	 */
 	protected void waitTillPacketReceived(DatagramSocket socket, DatagramPacket packet) {
-		System.out.print("Waiting for another request...\n");
 		try {
 			socket.receive(packet);
 			System.out.println("--> packet received");
@@ -487,22 +305,8 @@ public class TFTPSim {
 	 * 
 	 */
 	protected void sendPacketThroughSocket(DatagramSocket socket, DatagramPacket packet) {
-		if (packet.getPort() == serverPort) {
-			sentPacketTo = "server";
-		} else if (packet.getPort() == clientPort) {
-			sentPacketTo = "client";
-		}
 		try {
 			socket.send(packet);
-			System.out.println("Simulator: Sent packet to " + sentPacketTo);
-			System.out.println("To host: " + packet.getAddress());
-			System.out.println("Destination host port: " + packet.getPort());
-			// fromServerLen = sendPacket.getLength();
-			System.out.println("Length: " + packet.getLength());
-			System.out.println("Containing: ");
-			System.out.println("Byte Array: "
-					+ TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getLength())) + "\n");
-
 		} catch (IOException e) {
 			System.out.println("IO exception while attempting to send packet");
 		}
