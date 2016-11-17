@@ -192,7 +192,7 @@ public class TFTPSim {
 		// Check if we should be producing any error
 		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
-			System.out.print("1 --> LOST PACKET: ");
+			System.out.print("LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
 
 			// Since we dropped the first RRQ/WRQ request, we need wait for the
@@ -247,7 +247,7 @@ public class TFTPSim {
 		// Check if we should be producing any error
 		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
-			System.out.print("2 --> LOST PACKET: ");
+			System.out.print("LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
 
 			Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
@@ -332,7 +332,7 @@ public class TFTPSim {
 	}
 
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port){ 
-		System.out.println("1--> DELAYING PACKET for " + simMode.getDelayLength() + " ms... ");
+		System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
 		sendPacket = new DatagramPacket(data, packet.getLength(), packet.getAddress(), port);
 
 		// Send the duplicate packet at the specified delay time
