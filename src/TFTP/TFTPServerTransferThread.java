@@ -60,7 +60,7 @@ public class TFTPServerTransferThread implements Runnable {
         try {
             sendReceiveSocket = new DatagramSocket();
             //set a timeout of 10s
-            sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
+            //sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
         } catch (SocketException e) {
             e.printStackTrace();
         }
@@ -106,6 +106,7 @@ public class TFTPServerTransferThread implements Runnable {
             verboseLog("****************NEW TRANSFER****************\n");
             verboseLog("Opcode: READ");
             try {
+            	sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
                 //Parse RRQ packet
                 RRQPacket rrqPacket = new RRQPacket(packetData);
                 //Read from File
@@ -134,6 +135,7 @@ public class TFTPServerTransferThread implements Runnable {
             verboseLog("****************NEW TRANSFER****************\n");
             verboseLog("Opcode: WRITE");
             try {
+            	sendReceiveSocket.setSoTimeout(0);
                 //Parse WRQ packet
                 WRQPacket wrqPacket = new WRQPacket(packetData);
                 //Open file

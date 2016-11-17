@@ -60,7 +60,7 @@ public class TFTPClient {
 			// port on the local host machine. This socket will be used to
 			// send and receive UDP Datagram packets.
 			sendReceiveSocket = new DatagramSocket();
-			sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
+			//sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
 		} catch (SocketException se) { // Can't create the socket.
 			se.printStackTrace();
 			System.exit(1);
@@ -95,6 +95,7 @@ public class TFTPClient {
 			// write request
 			if (cmd.equals("W")) {
 				System.out.println("Client: creating WRQ packet.");
+				sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
 
 				// next we have a file name
 				for (;;) {
@@ -120,6 +121,7 @@ public class TFTPClient {
 				}
 			} else if (cmd.equals("R")) {// read request
 				System.out.println("Client: creating RRQ packet.");
+				sendReceiveSocket.setSoTimeout(0);//TODO
 
 				// next we have a file name
 				for (;;) {
