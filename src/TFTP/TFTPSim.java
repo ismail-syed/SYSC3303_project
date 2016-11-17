@@ -34,6 +34,8 @@ public class TFTPSim {
 	// Ports
 	private int serverPort = 69;
 	private int clientPort;
+	private boolean startNewTransfer; //true if transfer is done and new transfer is to begin
+	private boolean endOfWRQ;
 
 	/**
 	 * @param args
@@ -161,6 +163,7 @@ public class TFTPSim {
 	public void passOnTFTP() {
 
 		listenOnClient = true;
+		endOfWRQ = false;
 		for (;;) {
 			if (listenOnClient) {
 				handleClientSideCommunication();
@@ -215,12 +218,23 @@ public class TFTPSim {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		} else {
 			// Send packet to the server
+			//check if its the last data on a WRQ
+			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA 
+					&& receivePacket.getLength()<516){endOfWRQ = true;}
+			//check if we are starting a new transfer
+			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.READ
+					|| Opcode.asEnum((receivePacket.getData()[1])) == Opcode.WRITE){startNewTransfer = false;}
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);	
 		}
 		
 		// Start handling server side communications
-		listenOnClient = false;
+		if(startNewTransfer){
+			listenOnClient = true;
+			serverPort = 69;
+		}else{
+			listenOnClient = false;
+		}
 	}
 
 	/**
@@ -262,13 +276,18 @@ public class TFTPSim {
 		if(checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)){
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
 		} else {
-			// Send the packet
+			// check if its the last data block from client on RRQ
+						if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA 
+								&& receivePacket.getLength()<516){startNewTransfer  = true;}
+			// create the packet
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			// send the packet
 			sendPacketThroughSocket(sendSocket, sendPacket);	
 		}
 		
 		// Go back to handling client side communication
 		listenOnClient = true;
+		if(endOfWRQ){serverPort = 69;endOfWRQ = false;}
 	}
 
 	/**
