@@ -101,7 +101,9 @@ public class ErrorPacket extends TFTPPacket {
 		if (ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.ACCESS_VIOLATION
 				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED
 				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.FILE_ALREADY_EXISTS
-				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.FILE_NOT_FOUND) {
+				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.FILE_NOT_FOUND
+				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.ILLEGAL_OPERATION
+				&& ErrorCode.getErrorCode((int) opcodeAsByte) != ErrorCode.UNKNOWN_TID) {
 			throw new MalformedPacketException("Packet does not contain valid error code");
 		} else {
 			this.errorCode = ErrorCode.getErrorCode((int) opcodeAsByte);
