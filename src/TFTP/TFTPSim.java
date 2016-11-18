@@ -248,6 +248,12 @@ public class TFTPSim {
 	/**
 	 * Handle all the Server side communications
 	 */
+	/**
+	 * 
+	 */
+	/**
+	 * 
+	 */
 	public void handleServerSideCommunication() {
 		// Receive packet from server
 		System.out.println("Simulator: Waiting for packet from server...");
@@ -290,11 +296,12 @@ public class TFTPSim {
 		}
 
 		if(checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)){
+			System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
 		} else {
 			// check if its the last data block from client on RRQ
-						if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA 
-								&& receivePacket.getLength()<516){startNewTransfer  = true;}
+			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA 
+					&& receivePacket.getLength()<516){startNewTransfer  = true;}
 			// create the packet
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			// send the packet
@@ -396,10 +403,10 @@ public class TFTPSim {
 
 		if (currentOpCode == Opcode.DATA) {
 			System.out.println(
-					"DATA Block Number --> " + (packet.getData()[2]& 0xFF) + (packet.getData()[3]& 0xFF));
+					"DATA Block Number --> " + TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
 		} else if (currentOpCode == Opcode.ACK) {
 			System.out.println(
-					"ACK Block Number -->" + (packet.getData()[2]& 0xFF) + (packet.getData()[3]& 0xFF));
+					"ACK Block Number -->" + TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
 		}
 
 		if (TFTPSim.simMode.getSimState() == simStateToCheck && TFTPSim.simMode.getPacketType() == currentOpCode) {
@@ -408,7 +415,7 @@ public class TFTPSim {
 
 			// Get the current block number by concating the two byte values and
 			// parsing that String into an Int
-			int currentBlockNumber = packet.getData()[2]& 0xFF + packet.getData()[3]& 0xFF;
+			int currentBlockNumber = Integer.parseInt(TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
 			if (TFTPSim.simMode.getPacketNumer() == currentBlockNumber) {
 				return currentBlockNumber == TFTPSim.simMode.getPacketNumer();
 			}
@@ -441,7 +448,7 @@ public class TFTPSim {
 	 * Helper method to print out details about the simulated error message.
 	 */
 	private static void printErrorMessage(TFTPErrorSimMode mode, DatagramPacket packet) {
-		int currentBlockNumber = packet.getData()[2]& 0xFF + packet.getData()[3]& 0xFF;
+		int currentBlockNumber = Integer.parseInt(TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
 		if (mode.getPacketType() == Opcode.ACK) {
 			System.out.println("On ACK packet #" + currentBlockNumber + "\n");
 		} else if (mode.getPacketType() == Opcode.DATA) {
