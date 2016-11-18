@@ -66,5 +66,9 @@ public class TFTPErrorSimMode {
 	public Opcode getPacketType() {
 		return packetType;
 	}
+	
+	public void setSimState(ErrorSimState state){
+		this.simState = state;
+	}
 
 }

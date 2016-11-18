@@ -234,11 +234,11 @@ public class TFTPClient {
 				}
 				// create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-				if (dataPacket.getBlockNumber() <= previousBlockNumber) {
-					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-				} else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
-					throw new InvalidBlockNumberException("Data is out of order");
-				} else if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
+//				if (dataPacket.getBlockNumber() <= previousBlockNumber) {
+//					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+//				} else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
+//					throw new InvalidBlockNumberException("Data is out of order");
+				if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
 																									// if
 																									// there
 																									// is
@@ -247,8 +247,11 @@ public class TFTPClient {
 																									// available
 					// write the data you just received
 					try {
-						tftpWriter.writeToFile(dataPacket.getData());
-						previousBlockNumber = dataPacket.getBlockNumber();
+						//Write the data from the DATA packet only if it is the next block
+						if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
+							tftpWriter.writeToFile(dataPacket.getData());
+							previousBlockNumber = dataPacket.getBlockNumber();
+						}
 					} catch (IOException e) {
 						String errorMessage = e.getMessage();
 						switch (errorMessage) {
