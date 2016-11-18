@@ -394,12 +394,12 @@ public class TFTPSim {
 	private boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
 
-		if (Opcode.asEnum((packet.getData()[1])) == Opcode.DATA) {
+		if (currentOpCode == Opcode.DATA) {
 			System.out.println(
-					"DATA Block Number --> " + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])));//TODO
-		} else if (Opcode.asEnum((packet.getData()[1])) == Opcode.ACK) {
+					"DATA Block Number --> " + (packet.getData()[2]& 0xFF) + (packet.getData()[3]& 0xFF));
+		} else if (currentOpCode == Opcode.ACK) {
 			System.out.println(
-					"ACK Block Number -->" + Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3])));//TODO
+					"ACK Block Number -->" + (packet.getData()[2]& 0xFF) + (packet.getData()[3]& 0xFF));
 		}
 
 		if (TFTPSim.simMode.getSimState() == simStateToCheck && TFTPSim.simMode.getPacketType() == currentOpCode) {
@@ -408,7 +408,7 @@ public class TFTPSim {
 
 			// Get the current block number by concating the two byte values and
 			// parsing that String into an Int
-			int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));//TODO
+			int currentBlockNumber = packet.getData()[2]& 0xFF + packet.getData()[3]& 0xFF;
 			if (TFTPSim.simMode.getPacketNumer() == currentBlockNumber) {
 				return currentBlockNumber == TFTPSim.simMode.getPacketNumer();
 			}
@@ -441,7 +441,7 @@ public class TFTPSim {
 	 * Helper method to print out details about the simulated error message.
 	 */
 	private static void printErrorMessage(TFTPErrorSimMode mode, DatagramPacket packet) {
-		int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));//TODO
+		int currentBlockNumber = packet.getData()[2]& 0xFF + packet.getData()[3]& 0xFF;
 		if (mode.getPacketType() == Opcode.ACK) {
 			System.out.println("On ACK packet #" + currentBlockNumber + "\n");
 		} else if (mode.getPacketType() == Opcode.DATA) {
