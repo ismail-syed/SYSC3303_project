@@ -223,6 +223,13 @@ public class TFTPSim {
 			}
 		}
 
+		// DUPLICATE PACKET
+		if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
+			// This will send a duplicate packet after the delayed time set in simMode
+			System.out.print("DUPLICATING PACKET: ");
+			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+		}
+		
 		// DELAY PACKET
 		if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
@@ -255,12 +262,6 @@ public class TFTPSim {
 	/**
 	 * Handle all the Server side communications
 	 */
-	/**
-	 * 
-	 */
-	/**
-	 * 
-	 */
 	public void handleServerSideCommunication() {
 		// Receive packet from server
 		System.out.println("Simulator: Waiting for packet from server...");
@@ -280,6 +281,7 @@ public class TFTPSim {
 		}
 
 		// Check if we should be producing any error
+		// LOST PACKET
 		if (checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
 			System.out.print("LOST PACKET: ");
@@ -303,6 +305,14 @@ public class TFTPSim {
 			}
 		}
 
+		// DUPLICATE PACKET
+		if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
+			// This will send a duplicate packet after the delayed time set in simMode
+			System.out.print("DUPLICATING PACKET: ");
+			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+		}
+		
+		// DELAY PACKET
 		if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);

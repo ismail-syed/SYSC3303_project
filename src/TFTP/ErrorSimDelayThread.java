@@ -31,7 +31,8 @@ public class ErrorSimDelayThread implements Runnable{
 		} catch(InterruptedException e){
 			System.out.println("Error occured while trying to delay packet.");
 		}
-		errorSim.sendPacketThroughSocket(socket, packet);		
+		errorSim.sendPacketThroughSocket(socket, packet);
+		System.out.println("DELAYED PACKET SENT: After waiting " + delayLength + "ms");
 	}
 
 }
