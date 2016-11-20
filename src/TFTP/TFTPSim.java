@@ -321,6 +321,8 @@ public class TFTPSim {
 			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA && receivePacket.getLength() < 516) {
 				startNewTransfer = true;
 			}
+			//Check if the server had an error, if true, get ready for a new transfer 
+			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){endOfWRQ = true;}
 			// create the packet
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			// send the packet
@@ -420,10 +422,10 @@ public class TFTPSim {
 
 		if (currentOpCode == Opcode.DATA) {
 			System.out.println("DATA Block Number --> "
-					+ TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
+					+ TFTPPacket.getBlockNumber(packet.getData()));
 		} else if (currentOpCode == Opcode.ACK) {
 			System.out.println("ACK Block Number -->"
-					+ TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getData().length)));
+					+ TFTPPacket.getBlockNumber(packet.getData()));
 		}
 
 		if (TFTPSim.simMode.getSimState() == simStateToCheck && TFTPSim.simMode.getPacketType() == currentOpCode) {
@@ -432,7 +434,7 @@ public class TFTPSim {
 
 			// Get the current block number by concating the two byte values and
 			// parsing that String into an Int
-			int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));
+			int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
 			if (TFTPSim.simMode.getPacketNumer() == currentBlockNumber) {
 				return currentBlockNumber == TFTPSim.simMode.getPacketNumer();
 			}
@@ -465,7 +467,7 @@ public class TFTPSim {
 	 * Helper method to print out details about the simulated error message.
 	 */
 	private static void printErrorMessage(TFTPErrorSimMode mode, DatagramPacket packet) {
-		int currentBlockNumber = Integer.parseInt((packet.getData()[2] + "" + packet.getData()[3]));
+		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
 		if (mode.getPacketType() == Opcode.ACK) {
 			System.out.println("On ACK packet #" + currentBlockNumber + "\n");
 		} else if (mode.getPacketType() == Opcode.DATA) {
