@@ -303,7 +303,9 @@ public class TFTPClient {
 					previousBlockNumber = ackPacket.getBlockNumber() + 1;
 					// Send next block of file until there are no more blocks
 					if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
-						System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        if (verbose){
+                            System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        }
 						lastDataPacketSent = new DataPacket(previousBlockNumber,
 								tftpReader.getFileBlock(previousBlockNumber));
 						sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());

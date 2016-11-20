@@ -114,7 +114,7 @@ public class TFTPServerTransferThread implements Runnable {
                 //Read from File
                 tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //Create DATA packet with first block of file
-                System.out.println("Sending block 1");
+                verboseLog("Sending block 1");
                 previousBlockNumber = 1;
                 sendPacketToClient(new DataPacket(1, tftpReader.getFileBlock(1)));
             } catch (NoSuchFileException | FileNotFoundException e) {
@@ -190,6 +190,7 @@ public class TFTPServerTransferThread implements Runnable {
                 if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
                     //transfer finished for WRQ
                     tftpWriter.closeHandle();
+                    System.out.println("Complete File Has Been Received");
                     endTransfer();
                 }
             } catch (IOException e) {
@@ -235,6 +236,7 @@ public class TFTPServerTransferThread implements Runnable {
                         sendPacketToClient(new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber)));
                     }
                     if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
+                        System.out.println("Complete File Has Been Sent");
                         endTransfer();
                     }
                 }
