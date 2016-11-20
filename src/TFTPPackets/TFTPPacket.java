@@ -3,6 +3,7 @@ package TFTPPackets;
 import Exceptions.PacketOverflowException;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +61,20 @@ public class TFTPPacket {
                 return b.append(']').toString();
             b.append(", ");
         }
+    }
+    
+    /**
+     * Returns the block number of the TFTP Packet
+     * 
+     * @param data the TFTP Packet
+     * @return the block number of the TFTP Packet as an int
+     */
+    public static int getBlockNumber(byte[] data){
+        ByteBuffer bb = ByteBuffer.wrap(data);
+        bb.rewind();
+        
+        // Get block number
+        return (bb.getShort(2) & 0xFFFF);
     }
 
     /**
