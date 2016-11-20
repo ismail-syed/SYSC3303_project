@@ -1,17 +1,5 @@
 package TFTP;
 
-import static TFTPPackets.TFTPPacket.MAX_SIZE;
-
-//TFTPClient.java
-//This class is the client side for a very simple assignment based on TFTP on
-//UDP/IP. The client uses one port and sends a read or write request and gets 
-//the appropriate response from the server.  No actual file transfer takes place.   
-
-import java.io.*;
-import java.net.*;
-import java.util.Arrays;
-import java.util.Scanner;
-
 import Exceptions.InvalidBlockNumberException;
 import Exceptions.PacketOverflowException;
 import FileIO.TFTPReader;
@@ -19,6 +7,17 @@ import FileIO.TFTPWriter;
 import TFTPPackets.*;
 import TFTPPackets.ErrorPacket.ErrorCode;
 import TFTPPackets.TFTPPacket.Opcode;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.*;
+import java.util.Arrays;
+import java.util.Scanner;
+
+import static TFTPPackets.TFTPPacket.MAX_SIZE;
+
+//TFTPClient.java
+//This class is the client acts as a TFTP client
 
 /*
  * @author: Mohamed Zalat & Kunall Banerjee
@@ -40,6 +39,7 @@ public class TFTPClient {
 	private static boolean firstTime;
 	private static boolean verbose;
 	private int sendPort;
+	private TFTPPacket lastPacketSent;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -206,6 +206,7 @@ public class TFTPClient {
 		try {
 			// Receive packet
 			sendReceiveSocket.receive(receivePacket);
+
 			lastRequest = null;
 			counter = 0;
 			// Create byte array of proper size
@@ -302,7 +303,9 @@ public class TFTPClient {
 					previousBlockNumber = ackPacket.getBlockNumber() + 1;
 					// Send next block of file until there are no more blocks
 					if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
-						System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        if (verbose){
+                            System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        }
 						lastDataPacketSent = new DataPacket(previousBlockNumber,
 								tftpReader.getFileBlock(previousBlockNumber));
 						sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
@@ -316,7 +319,12 @@ public class TFTPClient {
 													// print message
 				ErrorPacket errorPacket = new ErrorPacket(data);
 				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
-				firstTime = true;
+				if(errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID){
+					//resend last packet without ending transfer
+					sendPacketToServer(lastPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+				} else {
+					firstTime = true;
+				}
 			}
 
 		} catch (SocketTimeoutException e) {
@@ -389,6 +397,7 @@ public class TFTPClient {
 		}
 		try {
 			sendReceiveSocket.send(sendPacket);
+			lastPacketSent = tftpPacket;
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

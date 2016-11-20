@@ -45,8 +45,7 @@ public class TFTPServerTransferThread implements Runnable {
     private TFTPReader tftpReader;
     private TFTPWriter tftpWriter;
     private final byte dataBuffer[] = new byte[MAX_SIZE];
-    private final InetAddress clientAddress;
-    private final int clientPort;
+    private final InetSocketAddress clientInetSocketAddress;
 
     public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath, boolean verbose) {
         this.packetFromClient = packetFromClient;
@@ -55,48 +54,51 @@ public class TFTPServerTransferThread implements Runnable {
         this.allowTransfers = true;
         this.receivedRRQPacket = false;
         this.receivedWRQPacket = false;
-        this.clientAddress = packetFromClient.getAddress();
-        this.clientPort = packetFromClient.getPort();
+        this.clientInetSocketAddress = (InetSocketAddress) packetFromClient.getSocketAddress();
         try {
             sendReceiveSocket = new DatagramSocket();
-            //set a timeout of 10s
-            //sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
         } catch (SocketException e) {
             e.printStackTrace();
         }
     }
 
     private void sendAndReceive() {
-        try {
-            //Create byte array of proper size
-            byte[] data = new byte[packetFromClient.getLength()];
-            System.arraycopy(packetFromClient.getData(), 0, data, 0, data.length);
-            verboseLog("\nServer: Packet received:");
-            verboseLog("From host: " + packetFromClient.getAddress());
-            verboseLog("Host port: " + packetFromClient.getPort());
-            int len = packetFromClient.getLength();
-            verboseLog("Length: " + len);
-            verboseLog("Containing: ");
-            verboseLog(new String(Arrays.copyOfRange(data, 0, len)));
-            verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
-            //Get opcode
-            TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
-            switch (opcode) {
-                case READ:
-                    processReadPacket(data);
-                    break;
-                case WRITE:
-                    processWritePacket(data);
-                    break;
-                case DATA:
-                    processDataPacket(data);
-                    break;
-                case ACK:
-                    processACKPacket(data);
-                    break;
+        //check for unknown TID
+        if(!clientInetSocketAddress.equals(packetFromClient.getSocketAddress())){
+            verboseLog("Received unknown TID, replying with unknown TID packet (ERROR CODE 5)");
+            sendPacketToClient(new ErrorPacket(ErrorCode.UNKNOWN_TID, "Unknown TID"));
+        } else {
+            try {
+                //Create byte array of proper size
+                byte[] data = new byte[packetFromClient.getLength()];
+                System.arraycopy(packetFromClient.getData(), 0, data, 0, data.length);
+                verboseLog("\nServer: Packet received:");
+                verboseLog("From host: " + packetFromClient.getAddress());
+                verboseLog("Host port: " + packetFromClient.getPort());
+                int len = packetFromClient.getLength();
+                verboseLog("Length: " + len);
+                verboseLog("Containing: ");
+                verboseLog(new String(Arrays.copyOfRange(data, 0, len)));
+                verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
+                //Get opcode
+                TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
+                switch (opcode) {
+                    case READ:
+                        processReadPacket(data);
+                        break;
+                    case WRITE:
+                        processWritePacket(data);
+                        break;
+                    case DATA:
+                        processDataPacket(data);
+                        break;
+                    case ACK:
+                        processACKPacket(data);
+                        break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
@@ -112,7 +114,7 @@ public class TFTPServerTransferThread implements Runnable {
                 //Read from File
                 tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //Create DATA packet with first block of file
-                System.out.println("Sending block 1");
+                verboseLog("Sending block 1");
                 previousBlockNumber = 1;
                 sendPacketToClient(new DataPacket(1, tftpReader.getFileBlock(1)));
             } catch (NoSuchFileException | FileNotFoundException e) {
@@ -188,6 +190,7 @@ public class TFTPServerTransferThread implements Runnable {
                 if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
                     //transfer finished for WRQ
                     tftpWriter.closeHandle();
+                    System.out.println("Complete File Has Been Received");
                     endTransfer();
                 }
             } catch (IOException e) {
@@ -229,10 +232,11 @@ public class TFTPServerTransferThread implements Runnable {
                     previousBlockNumber = ackPacket.getBlockNumber() + 1;
                     //Send next block of file until there are no more blocks
                     if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
-                        System.out.println("Sending DATA with block " + (previousBlockNumber));
+                        verboseLog("Sending DATA with block " + (previousBlockNumber));
                         sendPacketToClient(new DataPacket(previousBlockNumber, tftpReader.getFileBlock(previousBlockNumber)));
                     }
                     if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
+                        System.out.println("Complete File Has Been Sent");
                         endTransfer();
                     }
                 }
@@ -249,7 +253,7 @@ public class TFTPServerTransferThread implements Runnable {
         if (allowTransfers) {
             //Send packet to client
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
-                    clientAddress, clientPort);
+                    clientInetSocketAddress.getAddress(), clientInetSocketAddress.getPort());
             //printing out information about the packet
             verboseLog("Server: Sending packet");
             verboseLog("To host: " + sendPacket.getAddress());
