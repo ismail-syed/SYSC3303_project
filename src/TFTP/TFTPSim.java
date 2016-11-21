@@ -50,7 +50,9 @@ public class TFTPSim {
 
 		// Get error sim mode console input
 		do {
-			System.out.println("Select mode: \n(0)Normal mode\n(1)Packet loss\n(2)Packet delay\n(3)Duplicate packet");
+			System.out.println("Choose between: \n(0) Normal mode\n\tThe simulator simply acts a proxy"
+					+ "\n(1)Network error(s)\n\tGenerate a network error during a TFTP transfer"
+					+ "\n(2)Invalidate TFTP packet(s)\n\tChoose to corrupt a section of a TFTP packet");
 			if (sc.hasNextInt())
 				inp = sc.nextInt();
 			else {
@@ -61,14 +63,14 @@ public class TFTPSim {
 			// Set error sim mode
 			if (isValidErrorSimMode(inp)) {
 				if (inp == ErrorSimState.NORMAL.ordinal()) {
-					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode...\n");
+					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode");
 					break;
-				} else if (inp == ErrorSimState.LOST_PACKET.ordinal()) {
-					errorSimMode = ErrorSimState.LOST_PACKET;
-				} else if (inp == ErrorSimState.DELAY_PACKET.ordinal()) {
-					errorSimMode = ErrorSimState.DELAY_PACKET;
-				} else if (inp == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
-					errorSimMode = ErrorSimState.DUPLICATE_PACKET;
+				} else if (inp == ErrorSimState.NW_ERROR.ordinal()) {
+					errorSimMode = ErrorSimState.NW_ERROR;
+					extendMenu2();
+				} else if (inp == ErrorSimState.CORRUPT_TFTP_PACKET.ordinal()) {
+					errorSimMode = ErrorSimState.CORRUPT_TFTP_PACKET;
+					extendMenu1();
 				}
 				// we have a valid input now
 				errorSimModeSelected = true;
@@ -78,7 +80,8 @@ public class TFTPSim {
 		} while (!errorSimModeSelected);
 
 		// Get the packet type (DATA or ACK)
-		if (errorSimMode != ErrorSimState.NORMAL) {
+		if (errorSimMode == ErrorSimState.LOST_PACKET || errorSimMode == ErrorSimState.DELAY_PACKET
+				|| errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
 			System.out.println(
 					"Choose a packet type to manipulate:\n(0)DATA Packet\n(1)ACK Packet\n(2)RRQ Packet\n(3)WRQ Packet");
 			while (true) {
@@ -136,6 +139,32 @@ public class TFTPSim {
 		simMode = new TFTPErrorSimMode(errorSimMode, packetType, packetNumber, delayLength);
 		new TFTPSim(simMode).passOnTFTP();
 		sc.close();
+	}
+
+	private static void extendMenu1() {
+		System.out.println("Yet to be implemented");
+		System.exit(1);
+	}
+
+	private static void extendMenu2() {
+		Scanner sc = new Scanner(System.in);
+		boolean isValid = false;
+		do {
+			System.out.println(
+					"Choose a network error from the following:\n(3) Lose a packet\n(4) Delay a packet\n(5) Duplicate a packet");
+			int inp = sc.nextInt();
+			if (inp == ErrorSimState.LOST_PACKET.ordinal()) {
+				errorSimMode = ErrorSimState.LOST_PACKET;
+				isValid = true;
+			} else if (inp == ErrorSimState.DELAY_PACKET.ordinal()) {
+				isValid = true;
+				errorSimMode = ErrorSimState.DELAY_PACKET;
+			} else if (inp == ErrorSimState.DUPLICATE_PACKET.ordinal()) {
+				errorSimMode = ErrorSimState.DUPLICATE_PACKET;
+				isValid = true;
+			} else
+				System.out.println("Please select a valid network error");
+		} while (!isValid);
 	}
 
 	/**
@@ -223,13 +252,14 @@ public class TFTPSim {
 			}
 		}
 
-		// DUPLICATE PACKET
+		// // DUPLICATE PACKET
 		if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
-			// This will send a duplicate packet after the delayed time set in simMode
+			// This will send a duplicate packet after the delayed time set in
+			// simMode
 			System.out.print("DUPLICATING PACKET: ");
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
-		
+
 		// DELAY PACKET
 		if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
@@ -298,7 +328,7 @@ public class TFTPSim {
 			if (currentOpCode == Opcode.ACK) {
 				System.out.println("Dropped packet: Listening to Client...");
 				listenOnClient = true;
-				// so that next time we receive the same ack, it wont destroy it
+				// so that next time we receive the same ACK, it wont destroy it
 				// will be changed back later
 				simMode.setSimState(ErrorSimState.NORMAL);
 				return;
@@ -307,11 +337,12 @@ public class TFTPSim {
 
 		// DUPLICATE PACKET
 		if (checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
-			// This will send a duplicate packet after the delayed time set in simMode
+			// This will send a duplicate packet after the delayed time set in
+			// simMode
 			System.out.print("DUPLICATING PACKET: ");
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
-		
+
 		// DELAY PACKET
 		if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
@@ -321,8 +352,11 @@ public class TFTPSim {
 			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA && receivePacket.getLength() < 516) {
 				startNewTransfer = true;
 			}
-			//Check if the server had an error, if true, get ready for a new transfer 
-			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){endOfWRQ = true;}
+			// Check if the server had an error, if true, get ready for a new
+			// transfer
+			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR) {
+				endOfWRQ = true;
+			}
 			// create the packet
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			// send the packet
@@ -421,18 +455,17 @@ public class TFTPSim {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
 
 		if (currentOpCode == Opcode.DATA) {
-			System.out.println("DATA Block Number --> "
-					+ TFTPPacket.getBlockNumber(packet.getData()));
+			System.out.println("DATA Block Number --> " + TFTPPacket.getBlockNumber(packet.getData()));
 		} else if (currentOpCode == Opcode.ACK) {
-			System.out.println("ACK Block Number -->"
-					+ TFTPPacket.getBlockNumber(packet.getData()));
+			System.out.println("ACK Block Number -->" + TFTPPacket.getBlockNumber(packet.getData()));
 		}
 
 		if (TFTPSim.simMode.getSimState() == simStateToCheck && TFTPSim.simMode.getPacketType() == currentOpCode) {
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)
 				return true;
 
-			// Get the current block number by concating the two byte values and
+			// Get the current block number by concatenating the two byte values
+			// and
 			// parsing that String into an Int
 			int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
 			if (TFTPSim.simMode.getPacketNumer() == currentBlockNumber) {
@@ -443,13 +476,14 @@ public class TFTPSim {
 	}
 
 	/**
-	 * Helper method to validate error sim mode inputted through console
+	 * Valid modes are (0): Normal mode (1): Network error mode (2): Illegal
+	 * TFTP operation mode
 	 * 
 	 * @param mode
 	 * @return True if mode is in the error mode set
 	 */
 	private static boolean isValidErrorSimMode(int mode) {
-		return mode == 0 || mode == 1 || mode == 2 || mode == 3;
+		return mode == 0 || mode == 1 || mode == 2;
 	}
 
 	/**
