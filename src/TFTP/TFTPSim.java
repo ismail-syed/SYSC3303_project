@@ -314,7 +314,7 @@ public class TFTPSim {
 		
 		// DELAY PACKET
 		if (checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
-			System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
+//			System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + "ms... \n");
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
 		} else {
 			// check if its the last data block from client on RRQ
@@ -419,14 +419,6 @@ public class TFTPSim {
 	 */
 	private boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
-
-		if (currentOpCode == Opcode.DATA) {
-			System.out.println("DATA Block Number --> "
-					+ TFTPPacket.getBlockNumber(packet.getData()));
-		} else if (currentOpCode == Opcode.ACK) {
-			System.out.println("ACK Block Number -->"
-					+ TFTPPacket.getBlockNumber(packet.getData()));
-		}
 
 		if (TFTPSim.simMode.getSimState() == simStateToCheck && TFTPSim.simMode.getPacketType() == currentOpCode) {
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)
