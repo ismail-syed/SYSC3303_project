@@ -34,6 +34,7 @@ public class TFTPServerTransferThread implements Runnable {
 
     private static final int SOCKET_TIMEOUT_MS = 1000;
     private static final int SOCKET_TIMEOUT_LAST_PACKET_MS = 10000;
+    private static final int RETRY_LIMIT = 10;
     private final String filePath;
     private final boolean verbose; //verbose or quiet
     private int previousBlockNumber; //keeps track of the block numbers to ensure blocks received are in order
@@ -336,6 +337,7 @@ public class TFTPServerTransferThread implements Runnable {
 
     @Override
     public void run() {
+        int numberOfRetries = 0;
         while (allowTransfers) {
             if (!(packetFromClient.getAddress() == null)) {
                 sendAndReceive();
@@ -346,15 +348,21 @@ public class TFTPServerTransferThread implements Runnable {
                     receivePacketFromClient();
                 }
             } catch (SocketTimeoutException e) {
-                verboseLog("\nClient took too long to respond");
-                if (lastDataPacketSent == null) {
-                    //This case should never happen
-                    verboseLog("Null DATA packet detected");
-                    endTransfer();
+                if(numberOfRetries < RETRY_LIMIT){
+                    verboseLog("\nClient took too long to respond");
+                    if (lastDataPacketSent == null) {
+                        //This case should never happen
+                        verboseLog("Null DATA packet detected");
+                        endTransfer();
+                    } else {
+                        verboseLog("Retry attempt " + String.valueOf(++numberOfRetries));
+                        verboseLog("Resending last DATA packet");
+                        sendPacketToClient(lastDataPacketSent);
+                    }
                 } else {
-                    verboseLog("Resending last DATA packet");
-                    sendPacketToClient(lastDataPacketSent);
+                    endTransfer();
                 }
+
             }
         }
     }
