@@ -33,12 +33,14 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
 public class TFTPServerTransferThread implements Runnable {
 
     private static final int SOCKET_TIMEOUT_MS = 1000;
+    private static final int SOCKET_TIMEOUT_LAST_PACKET_MS = 10000;
     private final String filePath;
     private final boolean verbose; //verbose or quiet
     private int previousBlockNumber; //keeps track of the block numbers to ensure blocks received are in order
     private Boolean allowTransfers;
     private volatile Boolean receivedRRQPacket;
     private volatile Boolean receivedWRQPacket;
+    private ACKPacket lastAckPacketSent;
     private DataPacket lastDataPacketSent;
     private DatagramPacket packetFromClient;
     private DatagramSocket sendReceiveSocket;
@@ -250,7 +252,7 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void sendPacketToClient(TFTPPacket tftpPacket) {
-        if (allowTransfers) {
+        if (allowTransfers || tftpPacket instanceof ACKPacket) {
             //Send packet to client
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
                     clientInetSocketAddress.getAddress(), clientInetSocketAddress.getPort());
@@ -269,12 +271,14 @@ public class TFTPServerTransferThread implements Runnable {
                 endTransfer();
             } else if (tftpPacket instanceof DataPacket) {
                 lastDataPacketSent = (DataPacket) tftpPacket;
+            } else if (tftpPacket instanceof ACKPacket) {
+                lastAckPacketSent = (ACKPacket) tftpPacket;
             }
         }
     }
 
     private void endTransfer() {
-        verboseLog("Closing socket");
+        verboseLog("\nEnding transfer");
         allowTransfers = false;
         try {
             if (tftpWriter != null) {
@@ -283,11 +287,50 @@ public class TFTPServerTransferThread implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        try {
+            if(receivedWRQPacket){
+                sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_LAST_PACKET_MS);
+                receivePacketFromClient();
+                //check the packet received from the client is a DATA packet
+                if(packetFromClient.getData()[1] == TFTPPacket.Opcode.DATA.getOpCodeNumber()){
+                    verboseLog("Resending last ACK");
+                    sendPacketToClient(lastAckPacketSent);
+                } else {
+                    verboseLog("Received a packet that was not an ACK, not responding");
+                }
+            }
+
+        } catch (SocketTimeoutException e) {
+            verboseLog("No response from client, client must have received all the packets");
+        } catch (SocketException e) {
+            e.printStackTrace();
+        } finally {
+            closeSocket();
+        }
+    }
+
+    private void closeSocket(){
+        int socketNumber = sendReceiveSocket.getLocalPort();
+        sendReceiveSocket.close();
+        verboseLog("Closed socket: " + socketNumber);
     }
 
     private void verboseLog(String logMessage) {
         if (verbose) {
             System.out.println(logMessage);
+        }
+    }
+
+    private void receivePacketFromClient() throws SocketTimeoutException {
+        packetFromClient = new DatagramPacket(dataBuffer, dataBuffer.length);
+        try {
+            sendReceiveSocket.receive(packetFromClient);
+        } catch (IOException e) {
+            if(e instanceof  SocketTimeoutException){
+                throw new SocketTimeoutException();
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -300,8 +343,7 @@ public class TFTPServerTransferThread implements Runnable {
             try {
                 //Receive packet
                 if (allowTransfers) {
-                    packetFromClient = new DatagramPacket(dataBuffer, dataBuffer.length);
-                    sendReceiveSocket.receive(packetFromClient);
+                    receivePacketFromClient();
                 }
             } catch (SocketTimeoutException e) {
                 verboseLog("\nClient took too long to respond");
@@ -313,11 +355,7 @@ public class TFTPServerTransferThread implements Runnable {
                     verboseLog("Resending last DATA packet");
                     sendPacketToClient(lastDataPacketSent);
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
-        sendReceiveSocket.close();
-        verboseLog("Closed socket");
     }
 }
