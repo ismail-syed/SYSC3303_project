@@ -38,11 +38,13 @@ public class TFTPSim {
 										// transfer is to begin
 	private boolean endOfWRQ;
 
+	private static Scanner sc;
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Scanner sc = new Scanner(System.in);
+		sc = new Scanner(System.in);
 		Opcode packetType = null;
 
 		int packetNumber = 0, delayLength = 0, inp;
@@ -51,8 +53,8 @@ public class TFTPSim {
 		// Get error sim mode console input
 		do {
 			System.out.println("Choose between: \n(0) Normal mode\n\tThe simulator simply acts a proxy"
-					+ "\n(1)Network error(s)\n\tGenerate a network error during a TFTP transfer"
-					+ "\n(2)Invalidate TFTP packet(s)\n\tChoose to corrupt a section of a TFTP packet");
+					+ "\n(1) Network error(s)\n\tGenerate a network error during a TFTP transfer"
+					+ "\n(2) Invalidate TFTP packet(s)\n\tChoose to corrupt a section of a TFTP packet");
 			if (sc.hasNextInt())
 				inp = sc.nextInt();
 			else {
@@ -65,12 +67,10 @@ public class TFTPSim {
 				if (inp == ErrorSimState.NORMAL.ordinal()) {
 					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode");
 					break;
-				} else if (inp == ErrorSimState.NW_ERROR.ordinal()) {
-					errorSimMode = ErrorSimState.NW_ERROR;
-					extendMenu2();
-				} else if (inp == ErrorSimState.CORRUPT_TFTP_PACKET.ordinal()) {
-					errorSimMode = ErrorSimState.CORRUPT_TFTP_PACKET;
-					extendMenu1();
+				} else if (inp == 1) {
+					displayNetworkErrorMenu();
+				} else if (inp == 2) {
+					generateErrorPacketMenu();
 				}
 				// we have a valid input now
 				errorSimModeSelected = true;
@@ -141,12 +141,62 @@ public class TFTPSim {
 		sc.close();
 	}
 
-	private static void extendMenu1() {
-		System.out.println("Yet to be implemented");
-		System.exit(1);
+	// This is the menu prompting the user to corrupt a packet
+	private static void generateErrorPacketMenu() {
+		int input;
+		while (true) {
+			System.out.println("(1) Generate Error 4 \n(2) Generate Error 5");
+			if (sc.hasNextInt()) {
+				input = sc.nextInt();
+				if(input == 1 || input == 2) {
+					break; 
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		
+		if(input == 1){
+			int error4ModeInput;
+			while (true) {
+				System.out.println("Select error to generate: ");
+				System.out.println("(1) INVALID_OPCODE");
+				System.out.println("(2) EXTRA_DATA_AT_END");
+				System.out.println("(3) RQ_MISSING_FILENAME");
+				System.out.println("(4) RQ_MISSING_FIRST_ZERO");
+				System.out.println("(5) RQ_MISSING_MODE");
+				System.out.println("(6) RQ_INVALID_MODE");
+				System.out.println("(7) RQ_MISSING_SECOND_ZERO");
+				System.out.println("(8) DATA_OR_ACK_MISSING_BLOCK_NUMBER");
+				System.out.println("(9) DATA_OR_ACK_INVALID_BLOCK_NUMBER");
+				System.out.println("(10) DATA_MISSING_DATA");
+				System.out.println("(11) ERROR_INVALID_ERROR_CODE");
+				System.out.println("(12) ERROR_INVALID_ERROR_CODE");
+				System.out.println("(13) ERROR_MISSING_ERROR_MESSAGE");
+				System.out.println("(14) ERROR_MISSING_ERROR_MESSAGE");				
+				
+				if (sc.hasNextInt()) {
+					error4ModeInput = sc.nextInt();
+					if(isValidError4MenuSelection(error4ModeInput)) {
+						break; 
+					}
+				} else {
+					sc.next();
+					continue;
+				}
+			}
+
+		} 
+		else if (input == 2){
+			System.out.println("Implement stuff to generate Error 5");
+		}
+
+		
 	}
 
-	private static void extendMenu2() {
+	// This is the menu prompting the user to select LOST, DELAY, DUPLICATE 
+	private static void displayNetworkErrorMenu() {
 		Scanner sc = new Scanner(System.in);
 		boolean isValid = false;
 		do {
@@ -488,6 +538,15 @@ public class TFTPSim {
 	 */
 	private static boolean isValidPacketType(int mode) {
 		return mode == 0 || mode == 1 || mode == 2 || mode == 3;
+	}
+	
+	/**
+	 * 
+	 * Helper method to validate error Error 4 menu types
+	 * 
+	 */
+	private static boolean isValidError4MenuSelection(int mode) {
+		return mode > 0 && mode < 15 ;
 	}
 
 	/**

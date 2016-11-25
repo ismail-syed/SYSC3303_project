@@ -3,6 +3,8 @@ package TFTP;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import TFTP.TFTPErrorSimMode.ErrorSimState;
+
 public class PacketCorrupter {
 	
 	private PacketCorrupter(){
@@ -16,7 +18,7 @@ public class PacketCorrupter {
 	 * @param option what kind of corruption would you like to do
 	 * @return the corrupted data array
 	 */
-	public final static byte[] corruptPacket(byte[] packetAsByteArray, ExtendedMenu option){
+	public final static byte[] corruptPacket(byte[] packetAsByteArray, ErrorSimState option){
         byte[] data = null;
 		
 		switch(option){
@@ -61,6 +63,9 @@ public class PacketCorrupter {
 			break;
 		case RQ_MISSING_SECOND_ZERO:
 			data = missingLastZero(packetAsByteArray);
+			break;
+		default:
+			data = packetAsByteArray;
 			break;
 		}
 		
