@@ -18,16 +18,18 @@ public class TFTPErrorSimMode {
 	private int packetNumer;
 	private int delayLength;
 
-	// The state which the Simulation run in
+	/**
+	 * The state of the simulation
+	 *
+	 */
 	protected enum ErrorSimState {
-		NORMAL, LOST_PACKET, DELAY_PACKET, DUPLICATE_PACKET
+		NORMAL, NW_ERROR, CORRUPT_TFTP_PACKET, LOST_PACKET, DELAY_PACKET, DUPLICATE_PACKET
 	};
-
 
 	protected enum ErrorSimPacketType {
 		DATA, ACK, RRQ, WRQ;
 	}
-	
+
 	/**
 	 * 
 	 * @param state
@@ -39,18 +41,19 @@ public class TFTPErrorSimMode {
 	 * @param delayLen
 	 *            Only used in DELAY_PACKET error mode. Specifies the time (in
 	 *            ms) by which the transfer of a packet is delayed
-	 *            
+	 * 
 	 * @param packetType
-	 *            Duplicate packet type specified for ErrorSimState.DUPLICATE_PACKET 
-	 *            
+	 *            Duplicate packet type specified for
+	 *            ErrorSimState.DUPLICATE_PACKET
+	 * 
 	 */
-	public TFTPErrorSimMode(ErrorSimState state,  Opcode packetType, int packetNum, int delayLen) {
+	public TFTPErrorSimMode(ErrorSimState state, Opcode packetType, int packetNum, int delayLen) {
 		this.simState = state;
 		this.packetNumer = packetNum;
 		this.delayLength = delayLen;
 		this.packetType = packetType;
 	}
-	
+
 	public ErrorSimState getSimState() {
 		return simState;
 	}
@@ -62,12 +65,12 @@ public class TFTPErrorSimMode {
 	public int getDelayLength() {
 		return delayLength;
 	}
-	
+
 	public Opcode getPacketType() {
 		return packetType;
 	}
-	
-	public void setSimState(ErrorSimState state){
+
+	public void setSimState(ErrorSimState state) {
 		this.simState = state;
 	}
 
