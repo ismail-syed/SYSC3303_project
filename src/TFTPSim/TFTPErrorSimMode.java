@@ -29,6 +29,9 @@ public class TFTPErrorSimMode {
 	public enum ErrorSimState {
 		NORMAL, 
 		
+		//Error 5
+		INVALID_TID,
+		
 		// Network Errors
 		LOST_PACKET, 
 		DELAY_PACKET, 
