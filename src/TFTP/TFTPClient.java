@@ -299,13 +299,14 @@ public class TFTPClient {
 						if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
 							tftpWriter.writeToFile(dataPacket.getData());
 							previousBlockNumber = dataPacket.getBlockNumber();
-						} else if(dataPacket.getBlockNumber() > previousBlockNumber + 1) {
+						} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1) {
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
 											"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber()),
 									receivePacket.getAddress(), receivePacket.getPort());
 							if (verbose)
-								System.out.println("Corrupt Block number on Data Packet " + dataPacket.getBlockNumber());
+								System.out
+										.println("Corrupt Block number on Data Packet " + dataPacket.getBlockNumber());
 							tftpWriter.closeHandle();
 							firstTime = true;
 						}
@@ -383,20 +384,15 @@ public class TFTPClient {
 													// print message
 				ErrorPacket errorPacket = new ErrorPacket(data);
 				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
-				if (errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID) {
-					// resend last packet without ending transfer
-					sendPacketToServer(lastPacketSent, receivePacket.getAddress(), receivePacket.getPort());
-				} else {
-					firstTime = true;
-				}
+				firstTime = true;
+
 			} else {
 				if (verbose)
 					System.out.println("Corrupt Opcode on received Packet");
-				sendPacketToServer(
-						new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
-								"Corrupt Opcode on received Packet "),
+				sendPacketToServer(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Corrupt Opcode on received Packet "),
 						receivePacket.getAddress(), receivePacket.getPort());
-				if(tftpWriter != null) tftpWriter.closeHandle();
+				if (tftpWriter != null)
+					tftpWriter.closeHandle();
 				firstTime = true;
 			}
 
