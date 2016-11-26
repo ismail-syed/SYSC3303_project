@@ -1,4 +1,4 @@
-package TFTP;
+package TFTPSim;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -6,7 +6,6 @@ import java.util.Arrays;
 import Exceptions.InvalidBlockNumberException;
 import Exceptions.MalformedPacketException;
 import Exceptions.PacketOverflowException;
-import TFTP.TFTPErrorSimMode.ErrorSimState;
 import TFTPPackets.ACKPacket;
 import TFTPPackets.DataPacket;
 import TFTPPackets.ErrorPacket;
@@ -14,6 +13,7 @@ import TFTPPackets.ErrorPacket.ErrorCode;
 import TFTPPackets.RRQWRQPacketCommon;
 import TFTPPackets.TFTPPacket;
 import TFTPPackets.WRQPacket;
+import TFTPSim.TFTPErrorSimMode.ErrorSimState;
 
 public class CorruptionTester {
 

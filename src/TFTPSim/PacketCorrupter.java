@@ -1,9 +1,9 @@
-package TFTP;
+package TFTPSim;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import TFTP.TFTPErrorSimMode.ErrorSimState;
+import TFTPSim.TFTPErrorSimMode.ErrorSimState;
 
 public class PacketCorrupter {
 	

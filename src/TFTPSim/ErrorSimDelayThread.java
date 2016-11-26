@@ -1,4 +1,4 @@
-package TFTP;
+package TFTPSim;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
