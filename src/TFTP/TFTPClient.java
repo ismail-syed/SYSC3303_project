@@ -1,6 +1,7 @@
 package TFTP;
 
 import Exceptions.InvalidBlockNumberException;
+import Exceptions.MalformedPacketException;
 import Exceptions.PacketOverflowException;
 import FileIO.TFTPReader;
 import FileIO.TFTPWriter;
@@ -37,9 +38,11 @@ public class TFTPClient {
 	private TFTPWriter tftpWriter;
 	private static Mode run;
 	private static boolean firstTime;
+	private boolean firstReceive;
 	private static boolean verbose;
 	private int sendPort;
 	private TFTPPacket lastPacketSent;
+	private InetSocketAddress serverInetSocketAddress;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -54,13 +57,14 @@ public class TFTPClient {
 	public TFTPClient() {
 		lastDataPacketSent = null;
 		firstTime = true;
+		firstReceive = true;
 		lastRequest = null;
 		try {
 			// Construct a datagram socket and bind it to any available
 			// port on the local host machine. This socket will be used to
 			// send and receive UDP Datagram packets.
 			sendReceiveSocket = new DatagramSocket();
-			//sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
+			// sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
 		} catch (SocketException se) { // Can't create the socket.
 			se.printStackTrace();
 			System.exit(1);
@@ -95,7 +99,7 @@ public class TFTPClient {
 			// write request
 			if (cmd.equals("W")) {
 				System.out.println("Client: creating WRQ packet.");
-				sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);//TODO
+				sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
 
 				// next we have a file name
 				for (;;) {
@@ -121,7 +125,7 @@ public class TFTPClient {
 				}
 			} else if (cmd.equals("R")) {// read request
 				System.out.println("Client: creating RRQ packet.");
-				sendReceiveSocket.setSoTimeout(0);//TODO
+				sendReceiveSocket.setSoTimeout(0);// TODO
 
 				// next we have a file name
 				for (;;) {
@@ -186,6 +190,7 @@ public class TFTPClient {
 			lastRequest = tftpPacket;
 			sendPacketToServer(tftpPacket, InetAddress.getLocalHost(), sendPort);
 			System.out.println("Client: Packet sent.");
+			firstReceive = true;
 
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
@@ -195,18 +200,51 @@ public class TFTPClient {
 	/**
 	 * This function deals with the actual file transfer Data, ACK and error
 	 * packets go through this function
-	 * @throws IOException 
+	 * 
+	 * @throws IOException
 	 */
 	private void sendReceivePacket() throws IOException {
 		byte dataBuffer[] = new byte[MAX_SIZE];
 		byte[] data = null;
 		TFTPPacket tftpPacket = new TFTPPacket();
-
 		receivePacket = new DatagramPacket(dataBuffer, dataBuffer.length);
 		try {
 			// Receive packet
 			sendReceiveSocket.receive(receivePacket);
-
+			if (firstReceive) {
+				serverInetSocketAddress = (InetSocketAddress) receivePacket.getSocketAddress();
+				firstReceive = false;
+			} else {
+				if (!serverInetSocketAddress.equals(receivePacket.getSocketAddress())) {
+					data = new byte[receivePacket.getLength()];
+					System.arraycopy(dataBuffer, 0, data, 0, data.length);
+					Opcode opcode = Opcode.asEnum((int) data[1]);
+					DataPacket dataPacket;
+					ACKPacket ackPacket;
+					if (opcode == Opcode.DATA)
+						try {
+							dataPacket = new DataPacket(data);
+							sendPacketToServer(
+									new ErrorPacket(ErrorCode.UNKNOWN_TID,
+											"Unknown transfer ID on Data Packet " + dataPacket.getBlockNumber()),
+									serverInetSocketAddress.getAddress(), serverInetSocketAddress.getPort());
+						} catch (Exception e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+					else if (opcode == Opcode.ACK)
+						try {
+							ackPacket = new ACKPacket(data);
+							sendPacketToServer(
+									new ErrorPacket(ErrorCode.UNKNOWN_TID,
+											"Unknown transfer ID on ACK Packet " + ackPacket.getBlockNumber()),
+									serverInetSocketAddress.getAddress(), serverInetSocketAddress.getPort());
+						} catch (Exception e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+				}
+			}
 			lastRequest = null;
 			counter = 0;
 			// Create byte array of proper size
@@ -235,20 +273,23 @@ public class TFTPClient {
 				}
 				// create/validate data
 				DataPacket dataPacket = new DataPacket(data);
-//				if (dataPacket.getBlockNumber() <= previousBlockNumber) {
-//					tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-//				} else if (dataPacket.getBlockNumber() != previousBlockNumber + 1) {
-//					throw new InvalidBlockNumberException("Data is out of order");
+				// if (dataPacket.getBlockNumber() <= previousBlockNumber) {
+				// tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+				// } else if (dataPacket.getBlockNumber() != previousBlockNumber
+				// + 1) {
+				// throw new InvalidBlockNumberException("Data is out of
+				// order");
 				if (new File(filePath).getUsableSpace() >= dataPacket.getData().length) { // check
-																									// if
-																									// there
-																									// is
-																									// enough
-																									// space
-																									// available
+																							// if
+																							// there
+																							// is
+																							// enough
+																							// space
+																							// available
 					// write the data you just received
 					try {
-						//Write the data from the DATA packet only if it is the next block
+						// Write the data from the DATA packet only if it is the
+						// next block
 						if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
 							tftpWriter.writeToFile(dataPacket.getData());
 							previousBlockNumber = dataPacket.getBlockNumber();
@@ -303,9 +344,9 @@ public class TFTPClient {
 					previousBlockNumber = ackPacket.getBlockNumber() + 1;
 					// Send next block of file until there are no more blocks
 					if (ackPacket.getBlockNumber() < tftpReader.getNumberOfBlocks()) {
-                        if (verbose){
-                            System.out.println("Sending DATA with block " + (previousBlockNumber));
-                        }
+						if (verbose) {
+							System.out.println("Sending DATA with block " + (previousBlockNumber));
+						}
 						lastDataPacketSent = new DataPacket(previousBlockNumber,
 								tftpReader.getFileBlock(previousBlockNumber));
 						sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
@@ -319,8 +360,8 @@ public class TFTPClient {
 													// print message
 				ErrorPacket errorPacket = new ErrorPacket(data);
 				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
-				if(errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID){
-					//resend last packet without ending transfer
+				if (errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID) {
+					// resend last packet without ending transfer
 					sendPacketToServer(lastPacketSent, receivePacket.getAddress(), receivePacket.getPort());
 					tftpWriter.closeHandle();
 				} else {
@@ -344,7 +385,8 @@ public class TFTPClient {
 				counter++;
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
-					if(tftpWriter != null) tftpWriter.closeHandle();
+					if (tftpWriter != null)
+						tftpWriter.closeHandle();
 					firstTime = true;
 					counter = 0;
 				}
@@ -359,7 +401,8 @@ public class TFTPClient {
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
 					firstTime = true;
-					if(tftpWriter != null) tftpWriter.closeHandle();
+					if (tftpWriter != null)
+						tftpWriter.closeHandle();
 					counter = 0;
 				}
 			}
@@ -380,8 +423,9 @@ public class TFTPClient {
 	 */
 	public void sendPacketToServer(TFTPPacket tftpPacket, InetAddress address, int port) {
 		// Send packet to client
-		if(run == Mode.TEST)
-		sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, sendPort);
+		if (run == Mode.TEST)
+			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address,
+					sendPort);
 		else
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, port);
 		// printing out information about the packet
