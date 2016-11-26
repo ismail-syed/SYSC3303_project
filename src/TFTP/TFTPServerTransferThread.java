@@ -107,13 +107,14 @@ public class TFTPServerTransferThread implements Runnable {
 
     private void processReadPacket(byte[] packetData) throws IOException {
         if (!receivedRRQPacket && !receivedWRQPacket) {
+            RRQPacket rrqPacket = null;
             receivedRRQPacket = true;
             verboseLog("****************NEW TRANSFER****************\n");
             verboseLog("Opcode: READ");
             try {
             	sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
                 //Parse RRQ packet
-                RRQPacket rrqPacket = new RRQPacket(packetData);
+                rrqPacket = new RRQPacket(packetData);
                 //Read from File
                 tftpReader = new TFTPReader(new File(filePath + rrqPacket.getFilename()).getPath());
                 //Create DATA packet with first block of file
@@ -122,7 +123,7 @@ public class TFTPServerTransferThread implements Runnable {
                 sendPacketToClient(new DataPacket(1, tftpReader.getFileBlock(1)));
             } catch (NoSuchFileException | FileNotFoundException e) {
                 System.out.println("File not found");
-                sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "File not found"));
+                sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.FILE_NOT_FOUND, "File " + rrqPacket.getFilename() + "not found"));
             } catch (AccessDeniedException e) {
                 System.out.println("Access Violation");
                 sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
