@@ -39,19 +39,19 @@ public class TFTPSim {
 	private boolean endOfWRQ;
 
 	private static Scanner sc;
-	
+
 	private static Opcode packetTypeForErrorSim;
-	private static int packetNumberForErrorSim;
-	
+	private static int packetNumberForErrorSim, delayLengthForErrorSim;
+
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		sc = new Scanner(System.in);
-		int delayLength = 0, inp;
+		int rootMenuInput;
 		packetTypeForErrorSim = null;
 		packetNumberForErrorSim = 0;
-		
+
 		boolean errorSimModeSelected = false;
 
 		// Get error sim mode console input
@@ -60,20 +60,20 @@ public class TFTPSim {
 					+ "\n(2) Network error(s)\n\tGenerate a network error during a TFTP transfer"
 					+ "\n(3) Invalidate TFTP packet(s)\n\tChoose to corrupt a section of a TFTP packet");
 			if (sc.hasNextInt())
-				inp = sc.nextInt();
+				rootMenuInput = sc.nextInt();
 			else {
 				sc.next();
 				continue;
 			}
 
 			// Set error sim mode
-			if (isValidErrorSimMode(inp)) {
-				if (inp == 1) {
+			if (rootMenuInput == 1 || rootMenuInput == 2 || rootMenuInput == 3) {
+				if (rootMenuInput == 1) {
 					System.out.println("Simulator running in " + errorSimMode.toString().toLowerCase() + " mode");
 					break;
-				} else if (inp == 2) {
+				} else if (rootMenuInput == 2) {
 					displayNetworkErrorMenu();
-				} else if (inp == 3) {
+				} else if (rootMenuInput == 3) {
 					generateErrorPacketMenu();
 				}
 				// we have a valid input now
@@ -83,18 +83,88 @@ public class TFTPSim {
 			}
 		} while (!errorSimModeSelected);
 
+		simMode = new TFTPErrorSimMode(errorSimMode, packetTypeForErrorSim, packetNumberForErrorSim,
+				delayLengthForErrorSim);
+		new TFTPSim(simMode).passOnTFTP();
+		sc.close();
+	}
+
+	// This is the menu prompting the user to corrupt a packet
+	private static void generateErrorPacketMenu() {
+		int input;
+		while (true) {
+			System.out.println("(1) Generate Illegal TFTP operation. \n(2) Generate Unknown transfer ID");
+			if (sc.hasNextInt()) {
+				input = sc.nextInt();
+				if (input == 1 || input == 2) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+
+		// Generate Illegal TFTP operation
+		if (input == 1) {
+			// Prompt the extended menu to select the Invalid TFTP packet
+			int invalidPacketMode = promptForInvalidPacketMenuSelection();
+
+			// Set the error
+			setErrorSimInvalidPacketMode(invalidPacketMode);
+
+			// Prompt the user with DATA or ACK packet
+			if (TFTPErrorSimMode.requiresDataOrAckPrompt(errorSimMode)) {
+				packetTypeForErrorSim = promptForAckOrData();
+				packetNumberForErrorSim = promptForPacketNumber();
+			}
+
+			// Prompt the user to selectRRQ, WRQ, DATA, ACK, or ERROR
+			if (TFTPErrorSimMode.requiresAllTypePrompts(errorSimMode)) {
+				packetTypeForErrorSim = promptForSelectingTransferMode();
+			}
+
+		}
+
+		// Generate Unknown transfer ID
+		else if (input == 2) {
+			System.out.println("Implement stuff to generate Error 5");
+		}
+	}
+
+	// This is the menu prompting the user to select LOST, DELAY, DUPLICATE
+	private static void displayNetworkErrorMenu() {
+		int networkErrMode, transferMode;
+		boolean isValid = false;
+		do {
+			System.out.println(
+					"Choose a network error from the following:\n(1) Lose a packet\n(2) Delay a packet\n(3) Duplicate a packet");
+			networkErrMode = sc.nextInt();
+			if (networkErrMode == 1) {
+				errorSimMode = ErrorSimState.LOST_PACKET;
+				isValid = true;
+			} else if (networkErrMode == 2) {
+				isValid = true;
+				errorSimMode = ErrorSimState.DELAY_PACKET;
+			} else if (networkErrMode == 3) {
+				errorSimMode = ErrorSimState.DUPLICATE_PACKET;
+				isValid = true;
+			} else
+				System.out.println("Please select a valid network error");
+		} while (!isValid);
+
 		// Get the packet type (DATA or ACK)
 		if (errorSimMode == ErrorSimState.LOST_PACKET || errorSimMode == ErrorSimState.DELAY_PACKET
 				|| errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
 			System.out.println(
-					"Choose a packet type to manipulate:\n(0)DATA Packet\n(1)ACK Packet\n(2)RRQ Packet\n(3)WRQ Packet");
+					"Choose a packet type to manipulate:\n(1)DATA Packet\n(2)ACK Packet\n(3)RRQ Packet\n(4)WRQ Packet");
 			while (true) {
-				inp = sc.nextInt();
-				if (!isValidPacketType(inp)) {
+				transferMode = sc.nextInt();
+				if(!(transferMode == 1 || transferMode == 2 || transferMode == 3 || transferMode == 4)) {
 					System.out.println("Please choose from one of the above packet types");
 					continue;
 				}
-				switch (inp) {
+				switch (transferMode) {
 				case 0:
 					packetTypeForErrorSim = Opcode.DATA;
 					break;
@@ -117,123 +187,13 @@ public class TFTPSim {
 			if (packetTypeForErrorSim == Opcode.DATA || packetTypeForErrorSim == Opcode.ACK) {
 				packetNumberForErrorSim = promptForPacketNumber();
 			}
-			
+
 			// Get delay length
 			if (errorSimMode == ErrorSimState.DELAY_PACKET || errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
-				while (true) {
-					System.out.println("Enter delay length(ms):");
-					if (sc.hasNextInt()) {
-						delayLength = sc.nextInt();
-						break;
-					} else {
-						sc.next();
-						continue;
-					}
-				}
+				delayLengthForErrorSim = promptForDelayLength();
 			}
 		}
-		simMode = new TFTPErrorSimMode(errorSimMode, packetTypeForErrorSim, packetNumberForErrorSim, delayLength);
-		new TFTPSim(simMode).passOnTFTP();
-		sc.close();
-	}
 
-	// This is the menu prompting the user to corrupt a packet
-	private static void generateErrorPacketMenu() {
-		int input;
-		while (true) {
-			System.out.println("(1) Generate Illegal TFTP operation. \n(2) Generate Unknown transfer ID");
-			if (sc.hasNextInt()) {
-				input = sc.nextInt();
-				if(input == 1 || input == 2) {
-					break; 
-				}
-			} else {
-				sc.next();
-				continue;
-			}
-		}
-		
-		if(input == 1){
-			int invalidPacketMode;
-			while (true) {	
-				System.out.println("Select error to generate: ");
-				System.out.println("(1)  Invalid Opcode");
-				System.out.println("(2)  Extra Data");
-				System.out.println("(3)  Missing Filename");
-				System.out.println("(4)  Missing First Zero");
-				System.out.println("(5)  Missing Mode");
-				System.out.println("(6)  Corrupted Mode");
-				System.out.println("(7)  Missing 2nd Zero");
-				System.out.println("(8)  Invalid Block Number");
-				System.out.println("(9)  Missing Block Number");
-				System.out.println("(10) Missing Data");
-				System.out.println("(11) Invalid Error Code");
-				System.out.println("(12) Missing Error Code");
-				System.out.println("(13) Missing Error Message");
-				System.out.println("(14) Missing Zero");				
-				
-				if (sc.hasNextInt()) {
-					invalidPacketMode = sc.nextInt();
-					if(invalidPacketMode > 0 && invalidPacketMode < 15) {
-						break; 
-					}
-				} else {
-					sc.next();
-					continue;
-				}
-			}
-			
-			// Set the error
-			setErrorSimInvalidPacketMode(invalidPacketMode);
-			
-			// Prompt the user with DATA or ACK packet
-			if(TFTPErrorSimMode.requiresDataOrAckPrompt(errorSimMode)){
-				int transferMode;
-				while (true) {	
-					System.out.println("Generate invalid packet on:\n(1) DATA\n(2) ACK");					
-					if (sc.hasNextInt()) {
-						transferMode = sc.nextInt();
-						if(transferMode == 1) {
-							packetTypeForErrorSim = Opcode.DATA;
-							break;
-						}
-						if(transferMode == 2) {
-							packetTypeForErrorSim = Opcode.ACK;
-							break;
-						}
-					} else {
-						sc.next();
-						continue;
-					}
-				}
-				packetNumberForErrorSim = promptForPacketNumber();
-			}
-		} 
-		else if (input == 2){
-			System.out.println("Implement stuff to generate Error 5");
-		}		
-	}
-
-	// This is the menu prompting the user to select LOST, DELAY, DUPLICATE 
-	private static void displayNetworkErrorMenu() {
-		Scanner sc = new Scanner(System.in);
-		boolean isValid = false;
-		do {
-			System.out.println(
-					"Choose a network error from the following:\n(1) Lose a packet\n(2) Delay a packet\n(3) Duplicate a packet");
-			int inp = sc.nextInt();
-			if (inp == 1) {
-				errorSimMode = ErrorSimState.LOST_PACKET;
-				isValid = true;
-			} else if (inp == 2) {
-				isValid = true;
-				errorSimMode = ErrorSimState.DELAY_PACKET;
-			} else if (inp == 3) {
-				errorSimMode = ErrorSimState.DUPLICATE_PACKET;
-				isValid = true;
-			} else
-				System.out.println("Please select a valid network error");
-		} while (!isValid);
 	}
 
 	/**
@@ -328,16 +288,17 @@ public class TFTPSim {
 			System.out.print("DUPLICATING PACKET: ");
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
-		
+
 		// Generate ERROR 4 type packet
-		if(simMode.isInvalidPacketType()){
-			if(simMode.isInvalidPacketTypeRequest()){
+		if (simMode.isInvalidPacketType()) {
+			if (simMode.isInvalidPacketTypeRequest()) {
 				System.out.println("==> Generating Error 4");
-				System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+				System.out
+						.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 				data = PacketCorrupter.corruptPacket(receivePacket.getData(), simMode.getSimState());
 			}
 		}
-		
+
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
@@ -355,7 +316,7 @@ public class TFTPSim {
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 		}
-	
+
 		// Start handling server side communications
 		if (startNewTransfer) {
 			// RRQ has ended here
@@ -440,7 +401,6 @@ public class TFTPSim {
 			sendPacketThroughSocket(sendSocket, sendPacket);
 		}
 
-		
 		// Go back to handling client side communication
 		listenOnClient = true;
 		if (endOfWRQ) {
@@ -521,28 +481,6 @@ public class TFTPSim {
 	}
 
 	/**
-	 * Valid modes are (0): Normal mode (1): Network error mode (2): Illegal
-	 * TFTP operation mode
-	 * 
-	 * @param mode
-	 * @return True if mode is in the error mode set
-	 */
-	private static boolean isValidErrorSimMode(int mode) {
-		return mode == 1 || mode == 2 || mode == 3;
-	}
-
-	/**
-	 * 
-	 * Helper method to validate error sim packet type
-	 * 
-	 * @param mode
-	 * @return True if mode is in the packet mode
-	 */
-	private static boolean isValidPacketType(int mode) {
-		return mode == 0 || mode == 1 || mode == 2 || mode == 3;
-	}
-	
-	/**
 	 * Helper method to print out details about the simulated error message.
 	 */
 	private static void printErrorMessage(TFTPErrorSimMode mode, DatagramPacket packet) {
@@ -557,12 +495,48 @@ public class TFTPSim {
 			System.out.println("On WRQ \n");
 		}
 	}
-	
+
+	/**
+	 * Helper method to prompt the user to select the Invalid TFTP packet to
+	 * corrupt
+	 */
+	private static int promptForInvalidPacketMenuSelection() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1)  Invalid Opcode");
+			System.out.println("(2)  Extra Data");
+			System.out.println("(3)  Missing Filename");
+			System.out.println("(4)  Missing First Zero");
+			System.out.println("(5)  Missing Mode");
+			System.out.println("(6)  Corrupted Mode");
+			System.out.println("(7)  Missing 2nd Zero");
+			System.out.println("(8)  Invalid Block Number");
+			System.out.println("(9)  Missing Block Number");
+			System.out.println("(10) Missing Data");
+			System.out.println("(11) Invalid Error Code");
+			System.out.println("(12) Missing Error Code");
+			System.out.println("(13) Missing Error Message");
+			System.out.println("(14) Missing Zero");
+
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 15) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		return userInput;
+	}
+
 	/**
 	 * Helper method to prompt the user for the packet number
 	 */
-	private static int promptForPacketNumber(){
-		int packetNumber; 
+	private static int promptForPacketNumber() {
+		int packetNumber;
 		while (true) {
 			System.out.println("Enter packet number:");
 			if (sc.hasNextInt()) {
@@ -575,54 +549,134 @@ public class TFTPSim {
 		}
 		return packetNumber;
 	}
-	
-	private static void setErrorSimInvalidPacketMode(int menuSelectionInput){
-		switch(menuSelectionInput) {
-			case 1:
-				errorSimMode = ErrorSimState.INVALID_OPCODE;
+
+	/**
+	 * Helper method to prompt the user for the delay length
+	 */
+	private static int promptForDelayLength() {
+		int length;
+		while (true) {
+			System.out.println("Enter delay length(ms):");
+			if (sc.hasNextInt()) {
+				length = sc.nextInt();
 				break;
-			case 2:
-				errorSimMode = ErrorSimState.EXTRA_DATA_AT_END;
-				break;
-			case 3:
-				errorSimMode = ErrorSimState.RQ_MISSING_FILENAME;
-				break;
-			case 4:
-				errorSimMode = ErrorSimState.RQ_MISSING_FIRST_ZERO;
-				break;
-			case 5:
-				errorSimMode = ErrorSimState.RQ_MISSING_MODE;
-				break;
-			case 6:
-				errorSimMode = ErrorSimState.RQ_INVALID_MODE;
-				break;
-			case 7:
-				errorSimMode = ErrorSimState.RQ_MISSING_SECOND_ZERO;
-				break;
-			case 8:
-				errorSimMode = ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
-				break;
-			case 9:
-				errorSimMode = ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
-				break;
-			case 10:
-				errorSimMode = ErrorSimState.DATA_MISSING_DATA;
-				break;
-			case 11:
-				errorSimMode = ErrorSimState.ERROR_INVALID_ERROR_CODE;
-				break;
-			case 12:
-				errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_CODE;
-				break;
-			case 13:
-				errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_MESSAGE;
-				break;
-			case 14:
-				errorSimMode = ErrorSimState.ERROR_MISSING_ZERO;
-				break;
-			default:
-				errorSimMode = ErrorSimState.NORMAL;
-				break;
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		return length;
+	}
+
+	/**
+	 * Helper method to prompt the user for to select ACK or DATA
+	 * 
+	 */
+	private static Opcode promptForAckOrData() {
+		Opcode transferMode;
+		int userInput;
+		while (true) {
+			System.out.println("Generate invalid packet on:\n(1) DATA\n(2) ACK");
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput == 1) {
+					transferMode = Opcode.DATA;
+					break;
+				} else if (userInput == 2) {
+					transferMode = Opcode.ACK;
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		return transferMode;
+	}
+
+	/**
+	 * Helper method to prompt the user to select the transfer mode (1) RRQ (2)
+	 * WRQ (3) DATA (4) ACK (5) ERROR
+	 * 
+	 */
+	private static Opcode promptForSelectingTransferMode() {
+		Opcode transferMode;
+		int userInput;
+		while (true) {
+			System.out.println("Generate invalid packet on:\n(1) RRQ\n(2) WRQ\n(3) DATA\n(4) ACK\n(5) ERROR");
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput == 1) {
+					transferMode = Opcode.READ;
+					break;
+				} else if (userInput == 2) {
+					transferMode = Opcode.WRITE;
+					break;
+				} else if (userInput == 3) {
+					transferMode = Opcode.DATA;
+					break;
+				} else if (userInput == 4) {
+					transferMode = Opcode.ACK;
+					break;
+				} else if (userInput == 5) {
+					transferMode = Opcode.ERROR;
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		return transferMode;
+	}
+
+	private static void setErrorSimInvalidPacketMode(int menuSelectionInput) {
+		switch (menuSelectionInput) {
+		case 1:
+			errorSimMode = ErrorSimState.INVALID_OPCODE;
+			break;
+		case 2:
+			errorSimMode = ErrorSimState.EXTRA_DATA_AT_END;
+			break;
+		case 3:
+			errorSimMode = ErrorSimState.RQ_MISSING_FILENAME;
+			break;
+		case 4:
+			errorSimMode = ErrorSimState.RQ_MISSING_FIRST_ZERO;
+			break;
+		case 5:
+			errorSimMode = ErrorSimState.RQ_MISSING_MODE;
+			break;
+		case 6:
+			errorSimMode = ErrorSimState.RQ_INVALID_MODE;
+			break;
+		case 7:
+			errorSimMode = ErrorSimState.RQ_MISSING_SECOND_ZERO;
+			break;
+		case 8:
+			errorSimMode = ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
+			break;
+		case 9:
+			errorSimMode = ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
+			break;
+		case 10:
+			errorSimMode = ErrorSimState.DATA_MISSING_DATA;
+			break;
+		case 11:
+			errorSimMode = ErrorSimState.ERROR_INVALID_ERROR_CODE;
+			break;
+		case 12:
+			errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_CODE;
+			break;
+		case 13:
+			errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_MESSAGE;
+			break;
+		case 14:
+			errorSimMode = ErrorSimState.ERROR_MISSING_ZERO;
+			break;
+		default:
+			errorSimMode = ErrorSimState.NORMAL;
+			break;
 		}
 	}
 }
