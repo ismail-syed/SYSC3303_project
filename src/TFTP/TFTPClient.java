@@ -354,7 +354,15 @@ public class TFTPClient {
 						System.out.println("Dropping duplicate ACK packet");
 				} else {
 					if (ackPacket.getBlockNumber() != previousBlockNumber) {
-						throw new InvalidBlockNumberException("Data is out of order");
+						sendPacketToServer(
+								new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+										"Corrupt Block number on ACK Packet " + ackPacket.getBlockNumber()),
+								receivePacket.getAddress(), receivePacket.getPort());
+						if (verbose)
+							System.out.println("Corrupt Block number on ACK Packet " + ackPacket.getBlockNumber());
+						tftpWriter.closeHandle();
+						firstTime = true;
+						return;
 					}
 					previousBlockNumber = ackPacket.getBlockNumber() + 1;
 					// Send next block of file until there are no more blocks
