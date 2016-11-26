@@ -3,7 +3,7 @@ package TFTPPackets;
 import Exceptions.PacketOverflowException;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,6 +62,20 @@ public class TFTPPacket {
             b.append(", ");
         }
     }
+    
+    /**
+     * Returns the block number of the TFTP Packet
+     * 
+     * @param data the TFTP Packet
+     * @return the block number of the TFTP Packet as an int
+     */
+    public static int getBlockNumber(byte[] data){
+        ByteBuffer bb = ByteBuffer.wrap(data);
+        bb.rewind();
+        
+        // Get block number
+        return (bb.getShort(2) & 0xFFFF);
+    }
 
     /**
      * This method appends a byte to the packetByteArrayOutputStream
@@ -83,9 +97,9 @@ public class TFTPPacket {
      * @param ba the byte array to append to the packetByteArrayOutputStream
      * @since 1.0
      */
-    void addBytes(byte[] ba) throws PacketOverflowException, IOException {
-        for (int i = 0; i < ba.length; i++) {
-            addByte(ba[i]);
+    void addBytes(byte[] ba) throws PacketOverflowException {
+        for (byte aBa : ba) {
+            addByte(aBa);
         }
     }
 

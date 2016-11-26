@@ -21,8 +21,6 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
  */
 
 public class TFTPServer implements Runnable {
-    // UDP datagram packets and sockets used to send / receive
-    private DatagramPacket receivePacket;
     private DatagramSocket receiveSocket;
     private static String filePath;
     private static boolean verbose;
@@ -41,7 +39,6 @@ public class TFTPServer implements Runnable {
         }
     }
 
-
     /**
      * This method sends or receives files from the client
      *
@@ -49,7 +46,7 @@ public class TFTPServer implements Runnable {
      */
     private void receivePacketFromClient() {
         byte dataBuffer[] = new byte[MAX_SIZE];
-        receivePacket = new DatagramPacket(dataBuffer, dataBuffer.length);
+        DatagramPacket receivePacket = new DatagramPacket(dataBuffer, dataBuffer.length);
         try {
             receiveSocket.receive(receivePacket);
         } catch (IOException e) {
@@ -85,6 +82,7 @@ public class TFTPServer implements Runnable {
                 }
             }
         }
+
         String userInput;
         for(;;){
             //request user for verbose or quiet mode
@@ -104,6 +102,7 @@ public class TFTPServer implements Runnable {
         //Start the main program
         Thread serverSocketListeningThread = new Thread(new TFTPServer());
         serverSocketListeningThread.start();
+
         for(;;){
             System.out.println("Type \"QUIT\" to quit the server or \"cd\" to change directory");
             userInput = in.nextLine();
@@ -124,13 +123,23 @@ public class TFTPServer implements Runnable {
 				System.out.println("Type \"DEFAULT\" to use the relative directory or Enter the filepath of the directory");
 
 				for(;;){
-					String input = in.nextLine();
-					if(input.equals("DEFAULT")){
+					userInput = in.nextLine();
+					if(userInput.equals("DEFAULT")){
 						//if default print the dir and finish
-						System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Client");
-						filePath = System.getProperty("user.dir") + "\\Client" + "\\";
+						System.out.println("You are now in: " + System.getProperty("user.dir") + "\\Server");
+						filePath = System.getProperty("user.dir") + "\\Server" + "\\";
 						break;
-					}
+					}else{
+                        if(new File (userInput).isDirectory()){
+                            //if the path was provided finish
+                            filePath = userInput + "\\";
+                            System.out.println("You have entered a valid Directory Path\n");
+                            break;
+                        }else{
+                            //if the directory does not exist, ask for an input again
+                            System.out.println("Invalid Directory\nPlease Try Again.");
+                        }
+                    }
 				}
             }
         }
@@ -138,10 +147,8 @@ public class TFTPServer implements Runnable {
 
     @Override
     public void run() {
-        //Loop forever
-        for (; ; ) {
-            if(acceptingNewConnections)
-                this.receivePacketFromClient();
+        while (acceptingNewConnections) {
+            this.receivePacketFromClient();
         }
     }
 }
