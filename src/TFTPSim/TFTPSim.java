@@ -128,7 +128,13 @@ public class TFTPSim {
 
 		// Generate Unknown transfer ID
 		else if (input == 2) {
-			System.out.println("Implement stuff to generate Error 5");
+			// Prompt the extended menu to select the Invalid TFTP packet
+			errorSimMode = ErrorSimState.INVALID_TID;
+			packetTypeForErrorSim = promptForSelectingTransferMode();
+			if (packetTypeForErrorSim == Opcode.DATA || packetTypeForErrorSim == Opcode.ACK) {
+				packetNumberForErrorSim = promptForPacketNumber();
+			}
+			
 		}
 	}
 
@@ -250,6 +256,7 @@ public class TFTPSim {
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
+		Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 
 		// Check if we should be producing any error
 		// LOST PACKET
@@ -260,7 +267,6 @@ public class TFTPSim {
 
 			// Since we dropped the first RRQ/WRQ request, we need wait for the
 			// second RRQ/WRA
-			Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE) {
 				// Since we just 'dropped' a packet, we need to listen on the
 				// client again
@@ -313,6 +319,13 @@ public class TFTPSim {
 			}
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+			
+			//Generate ERROR 5
+			if(simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)){
+				//Implement Thread
+				simulateInvalidTID(sendPacket, serverPort);
+			}
+			
 		}
 
 		// Start handling server side communications
@@ -405,6 +418,13 @@ public class TFTPSim {
 			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			// send the packet
 			sendPacketThroughSocket(sendSocket, sendPacket);
+			
+			//Generate ERROR 5
+			if(simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)){
+				//Implement Thread
+				simulateInvalidTID(sendPacket, clientPort);
+			}
+
 		}
 
 		// Go back to handling client side communication
@@ -476,6 +496,12 @@ public class TFTPSim {
 			System.out.println("IO exception while attempting to send packet");
 		}
 	}
+	
+	private void simulateInvalidTID(DatagramPacket packet, int port){
+		// Send the duplicate packet at the specified delay time
+		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket));
+		tidThread.start();
+	}
 
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port) {
 		System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
@@ -513,17 +539,17 @@ public class TFTPSim {
 			System.out.println("(1)  Invalid Opcode");
 			System.out.println("(2)  Extra Data");
 			System.out.println("(3)  Missing Filename");
-			System.out.println("(4)  Missing First Zero");
+			System.out.println("(4)  Missing First Zero on Read or Write Request");
 			System.out.println("(5)  Missing Mode");
 			System.out.println("(6)  Corrupted Mode");
-			System.out.println("(7)  Missing 2nd Zero");
+			System.out.println("(7)  Missing 2nd Zero on Read or Write Request");
 			System.out.println("(8)  Invalid Block Number");
 			System.out.println("(9)  Missing Block Number");
 			System.out.println("(10) Missing Data");
 			System.out.println("(11) Invalid Error Code");
 			System.out.println("(12) Missing Error Code");
 			System.out.println("(13) Missing Error Message");
-			System.out.println("(14) Missing Zero");
+			System.out.println("(14) Missing Zero on Error Packet");
 
 			if (sc.hasNextInt()) {
 				userInput = sc.nextInt();
