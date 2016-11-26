@@ -114,13 +114,13 @@ public class TFTPSim {
 			setErrorSimInvalidPacketMode(invalidPacketMode);
 
 			// Prompt the user with DATA or ACK packet
-			if (TFTPErrorSimMode.requiresDataOrAckPrompt(errorSimMode)) {
+			if (TFTPErrorSimMode.isDataOrAckPromptDependent(errorSimMode)) {
 				packetTypeForErrorSim = promptForAckOrData();
 				packetNumberForErrorSim = promptForPacketNumber();
 			}
 
-			// Prompt the user to selectRRQ, WRQ, DATA, ACK, or ERROR
-			if (TFTPErrorSimMode.requiresAllTypePrompts(errorSimMode)) {
+			// Prompt the user to select RRQ, WRQ, DATA, ACK, or ERROR
+			if (TFTPErrorSimMode.isDependentOnAllTransferModes(errorSimMode)) {
 				packetTypeForErrorSim = promptForSelectingTransferMode();
 			}
 
@@ -253,7 +253,7 @@ public class TFTPSim {
 
 		// Check if we should be producing any error
 		// LOST PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.LOST_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
 			System.out.print("LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
@@ -282,7 +282,7 @@ public class TFTPSim {
 		}
 
 		// DUPLICATE PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
@@ -291,16 +291,14 @@ public class TFTPSim {
 
 		// Generate ERROR 4 type packet
 		if (simMode.isInvalidPacketType()) {
-			if (simMode.isInvalidPacketTypeRequest()) {
-				System.out.println("==> Generating Error 4");
-				System.out
-						.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+			if(simMode.isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
+				System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 				data = PacketCorrupter.corruptPacket(receivePacket.getData(), simMode.getSimState());
 			}
 		}
 
 		// DELAY PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.DELAY_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		} else {
 			// Send packet to the server
@@ -351,7 +349,7 @@ public class TFTPSim {
 
 		// Check if we should be producing any error
 		// LOST PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.LOST_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
 			// Simulate a lost by not setting sendPacket
 			System.out.print("LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
@@ -375,15 +373,23 @@ public class TFTPSim {
 		}
 
 		// DUPLICATE PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.DUPLICATE_PACKET, receivePacket)) {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
 
+		// Generate ERROR 4 type packet
+		if (simMode.isInvalidPacketType()) {
+			if(simMode.isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
+				System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+				data = PacketCorrupter.corruptPacket(receivePacket.getData(), simMode.getSimState());
+			}
+		}
+		
 		// DELAY PACKET
-		if (simMode.checkPacketToCreateNetworkError(ErrorSimState.DELAY_PACKET, receivePacket)) {
+		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
 		} else {
 			// check if its the last data block from client on RRQ

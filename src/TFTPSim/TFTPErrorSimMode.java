@@ -100,7 +100,7 @@ public class TFTPErrorSimMode {
 	
 	// Helper method to check if the errSimState requires an
 	// DATA and ACK selection prompt
-	public static boolean requiresDataOrAckPrompt(ErrorSimState errSimState){
+	public static boolean isDataOrAckPromptDependent(ErrorSimState errSimState){
 		return (errSimState == ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER || 
 				errSimState == ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER ||
 				errSimState == ErrorSimState.DATA_MISSING_DATA );
@@ -108,13 +108,13 @@ public class TFTPErrorSimMode {
 	
 	// Helper method to check if the errSimState requires an
 	// a prompt for WRQ, RRQ, DATA, ACK or ERROR
-	public static boolean requiresAllTypePrompts(ErrorSimState errSimState){
+	public static boolean isDependentOnAllTransferModes(ErrorSimState errSimState){
 		return (errSimState == ErrorSimState.INVALID_OPCODE || 
 				errSimState == ErrorSimState.EXTRA_DATA_AT_END );
 	}
 	
 	// Helper method to check if the simState is in a ERROR packet type mode
-	public boolean isInvalidErrorPacketType(){
+	public boolean isErrorPacketTypeDependent(){
 		return (simState == ErrorSimState.ERROR_INVALID_ERROR_CODE || 
 				simState == ErrorSimState.ERROR_MISSING_ERROR_CODE ||
 				simState == ErrorSimState.ERROR_MISSING_ERROR_MESSAGE ||
@@ -141,45 +141,45 @@ public class TFTPErrorSimMode {
 		);
 	}
 	
-	// Helper method to check if the simState is in a mode
-	// that generates an ERROR type packet
-	private boolean isInvalidPacketErrorType(){
-		return (simState == ErrorSimState.ERROR_INVALID_ERROR_CODE ||
-				simState == ErrorSimState.ERROR_MISSING_ERROR_CODE ||
-				simState == ErrorSimState.ERROR_MISSING_ERROR_MESSAGE ||
-				simState == ErrorSimState.ERROR_MISSING_ZERO);
-	}
-	
 	/**
 	 * Helper method to check if the simStateToCheck and packet meet the
 	 * requirements for the properties saved in the errorSimMode
 	 * 
 	 * @param simStateToCheck
-	 * @param errorSimMode
 	 * @param packet
 	 * @return
 	 */
-	public boolean checkPacketToCreateNetworkError(ErrorSimState simStateToCheck, DatagramPacket packet) {
+	public boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
-		if (this.simState == simStateToCheck && this.packetType == currentOpCode) {
-			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)
-				return true;
+		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
+		if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
+		return (this.simState == simStateToCheck && this.packetType == currentOpCode
+				&& this.packetNumer == currentBlockNumber);
+	}
+	
+	public boolean checkPacketToCreateInvalidPacket(DatagramPacket packet){
+		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
+		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
 
-			// Get the current block number by concatenating the two byte values
-			// and
-			// parsing that String into an Int
-			int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
-			if (this.packetNumer == currentBlockNumber) {
-				return currentBlockNumber == this.packetNumer;
-			}
+		return false;
+	}
+	
+	public boolean isCurrentPacketValidToGenerateInvalidPacket(DatagramPacket packet){
+		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
+		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
+		if(isInvalidPacketTypeRequest()){
+			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
+		}
+		else if(isDataOrAckPromptDependent(this.simState)){
+			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
+		}
+		else if(isDependentOnAllTransferModes(this.simState)){
+			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
+		}
+		else if(isErrorPacketTypeDependent()){
+			return currentOpCode == Opcode.ERROR;
 		}
 		return false;
 	}
 	
-	public boolean checkPacketToCreateInvalidPacket(ErrorSimState simStateToCheck, DatagramPacket packet){
-		if(isInvalidPacketType()){
-			
-		}
-		return false; 
-	}
 }
