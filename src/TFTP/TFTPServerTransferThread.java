@@ -28,7 +28,7 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
  * @author Team 3000000
  * @author Aritra Sengupta
  * @author Shasthra Ranasinghe
- * @version 3.0
+ * @version 4.0
  */
 
 public class TFTPServerTransferThread implements Runnable {
@@ -117,11 +117,15 @@ public class TFTPServerTransferThread implements Runnable {
         verboseLog("Opcode: ERROR");
         try {
             ErrorPacket errorPacket = new ErrorPacket(packetData);
-        } catch (MalformedPacketException e) {
-            e.printStackTrace();
-        } catch (PacketOverflowException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            ErrorCode errorCode = errorPacket.getErrorCode();
+            if(errorCode.equals(ErrorCode.ILLEGAL_OPERATION)
+                    ||errorCode.equals(ErrorCode.UNKNOWN_TID) ) {
+                //end transfer on illegal operation or unknown TID
+                endTransfer();
+            }
+        } catch (MalformedPacketException | PacketOverflowException | IOException e) {
+            verboseLog("Error packet received in invalid");
+            sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             e.printStackTrace();
         }
     }
@@ -199,9 +203,6 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (MalformedPacketException e){
                 verboseLog("Invalid file name");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
-            } catch (BufferUnderflowException e){
-                verboseLog("Packet missing delimiting 0's");
-                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             }
         } else {
             verboseLog("Dropping duplicate WRQ packet");
@@ -264,7 +265,11 @@ public class TFTPServerTransferThread implements Runnable {
                     verboseLog("Dropping duplicate ACK packet");
                 } else {
                     if (ackPacket.getBlockNumber() != previousBlockNumber) {
-                        throw new InvalidBlockNumberException("Data is out of order");
+                        //Ack packet does not have the right order
+                        //If block number is greater than the previousBlockNumber send error 4
+                        if(ackPacket.getBlockNumber() > previousBlockNumber ){
+                            throw new InvalidBlockNumberException("Data is out of order");
+                        }
                     }
                     previousBlockNumber = ackPacket.getBlockNumber() + 1;
                     //Send next block of file until there are no more blocks
@@ -278,7 +283,7 @@ public class TFTPServerTransferThread implements Runnable {
                     }
                 }
             } catch (MalformedPacketException | PacketOverflowException | InvalidBlockNumberException e) {
-                e.printStackTrace();
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid ACK packet"));
             }
         } else {
             verboseLog("Received ACK packet without receiving a WRQ packet first");
