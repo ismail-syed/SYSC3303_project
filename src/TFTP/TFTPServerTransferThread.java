@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.*;
+import java.nio.BufferUnderflowException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
@@ -152,6 +153,9 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (MalformedPacketException e){
                 verboseLog("Invalid file name");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+            } catch (BufferUnderflowException e){
+                verboseLog("Packet missing delimiting 0's");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             }
         } else {
             verboseLog("Dropping duplicate RRQ packet");
@@ -195,6 +199,9 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (MalformedPacketException e){
                 verboseLog("Invalid file name");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+            } catch (BufferUnderflowException e){
+                verboseLog("Packet missing delimiting 0's");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             }
         } else {
             verboseLog("Dropping duplicate WRQ packet");
