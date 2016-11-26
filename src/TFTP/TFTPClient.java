@@ -230,6 +230,7 @@ public class TFTPClient {
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on Data Packet " + dataPacket.getBlockNumber()),
 									receivePacket.getAddress(), receivePacket.getPort());
+							return;
 						} catch (Exception e1) {
 							// TODO Auto-generated catch block
 							e1.printStackTrace();
@@ -243,6 +244,7 @@ public class TFTPClient {
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on ACK Packet " + ackPacket.getBlockNumber()),
 									receivePacket.getAddress(), receivePacket.getPort());
+							return;
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
 							e.printStackTrace();
