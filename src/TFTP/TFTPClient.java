@@ -224,6 +224,8 @@ public class TFTPClient {
 					if (opcode == Opcode.DATA)
 						try {
 							dataPacket = new DataPacket(data);
+							if (verbose)
+								System.out.println("Unknown transfer ID on Data Packet " + dataPacket.getBlockNumber());
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on Data Packet " + dataPacket.getBlockNumber()),
@@ -235,6 +237,8 @@ public class TFTPClient {
 					else if (opcode == Opcode.ACK)
 						try {
 							ackPacket = new ACKPacket(data);
+							if (verbose)
+								System.out.println("Unknown transfer ID on ACK Packet " + ackPacket.getBlockNumber());
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on ACK Packet " + ackPacket.getBlockNumber()),
@@ -293,6 +297,15 @@ public class TFTPClient {
 						if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
 							tftpWriter.writeToFile(dataPacket.getData());
 							previousBlockNumber = dataPacket.getBlockNumber();
+						} else if(dataPacket.getBlockNumber() > previousBlockNumber + 1) {
+							sendPacketToServer(
+									new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+											"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber()),
+									receivePacket.getAddress(), receivePacket.getPort());
+							if (verbose)
+								System.out.println("Corrupt Block number on Data Packet " + dataPacket.getBlockNumber());
+							tftpWriter.closeHandle();
+							firstTime = true;
 						}
 					} catch (IOException e) {
 						String errorMessage = e.getMessage();
@@ -363,10 +376,18 @@ public class TFTPClient {
 				if (errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID) {
 					// resend last packet without ending transfer
 					sendPacketToServer(lastPacketSent, receivePacket.getAddress(), receivePacket.getPort());
-					tftpWriter.closeHandle();
 				} else {
 					firstTime = true;
 				}
+			} else {
+				if (verbose)
+					System.out.println("Corrupt Opcode on received Packet");
+				sendPacketToServer(
+						new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+								"Corrupt Opcode on received Packet "),
+						receivePacket.getAddress(), receivePacket.getPort());
+				if(tftpWriter != null) tftpWriter.closeHandle();
+				firstTime = true;
 			}
 
 		} catch (SocketTimeoutException e) {
