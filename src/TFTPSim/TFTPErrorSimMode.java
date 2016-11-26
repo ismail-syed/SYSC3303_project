@@ -152,9 +152,11 @@ public class TFTPErrorSimMode {
 	public boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
 		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
-		if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
-		return (this.simState == simStateToCheck && this.packetType == currentOpCode
-				&& this.packetNumer == currentBlockNumber);
+		if(this.simState == simStateToCheck){
+			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
+			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
+		}
+		return false;
 	}
 	
 	public boolean checkPacketToCreateInvalidPacket(DatagramPacket packet){
