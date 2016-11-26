@@ -322,6 +322,7 @@ public class TFTPClient {
 				if(errorPacket.getErrorCode() == ErrorCode.UNKNOWN_TID){
 					//resend last packet without ending transfer
 					sendPacketToServer(lastPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+					tftpWriter.closeHandle();
 				} else {
 					firstTime = true;
 				}
