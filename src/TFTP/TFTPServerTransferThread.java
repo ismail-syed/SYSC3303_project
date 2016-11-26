@@ -86,6 +86,10 @@ public class TFTPServerTransferThread implements Runnable {
                 //Get opcode
                 TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
                 switch (opcode) {
+                    case UNKNOWN:
+                        verboseLog("Received unknown packet type.");
+                        endTransfer();
+                        break;
                     case READ:
                         processReadPacket(data);
                         break;
@@ -98,10 +102,26 @@ public class TFTPServerTransferThread implements Runnable {
                     case ACK:
                         processACKPacket(data);
                         break;
+                    case ERROR:
+                        processErrorPacket(data);
+                        break;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    private void processErrorPacket(byte[] packetData) {
+        verboseLog("Opcode: ERROR");
+        try {
+            ErrorPacket errorPacket = new ErrorPacket(packetData);
+        } catch (MalformedPacketException e) {
+            e.printStackTrace();
+        } catch (PacketOverflowException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -127,8 +147,11 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (AccessDeniedException e) {
                 System.out.println("Access Violation");
                 sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
-            } catch (PacketOverflowException | MalformedPacketException | InvalidBlockNumberException e) {
+            } catch (PacketOverflowException | InvalidBlockNumberException e) {
                 e.printStackTrace();
+            } catch (MalformedPacketException e){
+                verboseLog("Invalid file name");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
             }
         } else {
             verboseLog("Dropping duplicate RRQ packet");
@@ -167,8 +190,11 @@ public class TFTPServerTransferThread implements Runnable {
                 } else {
                     throw e;
                 }
-            } catch (InvalidBlockNumberException | PacketOverflowException | MalformedPacketException e) {
+            } catch (InvalidBlockNumberException | PacketOverflowException e) {
                 e.printStackTrace();
+            } catch (MalformedPacketException e){
+                verboseLog("Invalid file name");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
             }
         } else {
             verboseLog("Dropping duplicate WRQ packet");
