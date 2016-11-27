@@ -134,6 +134,29 @@ Mohamed Zalat
 - Added proper file handling to client
 - Debugged Sim to point out errors
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kunall Banerjee
+- Worked briefly on the error simulator
+- Added TFTP Packet format errors 4 & 5
+- Timing Diagrams
+- Project management and coordination
+
+Ismail Syed & Shasthra Ranasinghe
+- Error simulator
+	- Refactoring
+	- Added support for error packets 4 & 5
+
+Aritra Sengupta
+- Server side implementation
+- Refactored server-side code
+
+Mohamed Zalat
+- Client side implementation
+- Refactored client-side code
+
 ========================================================================
 
 FILES
@@ -143,9 +166,12 @@ FILES
 |	Iteration1_UML_Class_diagrams.png
 │       Iteration2_UML_Class_diagrams.png
 |	Iteration3_UML_Class_diagrams.png
+|	Iteration4_UML_Class_diagrams.png
 │       Timing_Diagram_Error_1.png
 │       Timing_Diagram_Error_2.png
 │       Timing_Diagram_Error_3.png
+|	Timing_Diagram_Error_4.png
+|	Timing_Diagram_Error_5.png
 │       Timing_Diagram_Error_6.png
 │       UCM_read_file_transfer.png
 │       UCM_write_file_transfer.png
@@ -156,7 +182,7 @@ FILES
 |	Timing_Diagram_Delay_WRQ.png
 |	Timing_Diagram_Delay_WRQ.png
 │
-└───SYSC3303_Iteration3
+└───SYSC3303_Iteration4
     │   .classpath
     │   .project
     │
@@ -185,13 +211,18 @@ FILES
         │       TFTPWriter.java
         │
         ├───TFTP
-	|	ErrorSimDelayThread.java
         │       TFTPClient.java
-	|	TFTPErrorSimMode.java
         │       TFTPServer.java
         │       TFTPServerTransferThread.java
-        │       TFTPSim.java
         │
+	|----TFTPSim
+	|	ErrorSimDelayThread.java
+	|	TFTPErrorSimMode.java
+        │       TFTPSim.java
+        │       CorruptionTester.java
+        │       InvalidTIDThread.java
+        │       PacketCorrupter.java
+	|
         └───TFTPPackets
                 ACKPacket.java
                 DataPacket.java
@@ -207,7 +238,7 @@ TEST INSTRUCTIONS (NETWORK ERRORS)
 
 (Note: The numbers in the files below is how big the files are in bytes)
 
-1) Complete Set up instruction above.
+1) Complete the set-up instruction above before you continue!
 2) When making a read request the files available are:
 - Server_0.txt
 - Server_250.txt
@@ -251,11 +282,5 @@ TEST INSTRUCTIONS (NETWORK ERRORS)
 	- less than 512 bytes
 	- exactly 512 bytes
 	- greater than 512 bytes
-
-========================================================================
-
-CREDITS
-
-Assignment 1 sample solution from the Course Materials Page
 
 ========================================================================
