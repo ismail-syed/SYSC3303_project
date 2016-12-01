@@ -107,23 +107,27 @@ public class TFTPSim {
 
 		// Generate Illegal TFTP operation
 		if (input == 1) {
-			// Prompt the extended menu to select the Invalid TFTP packet
-			int invalidPacketMode = promptForInvalidPacketMenuSelection();
-
-			// Set the error
-			setErrorSimInvalidPacketMode(invalidPacketMode);
-
-			// Prompt the user with DATA or ACK packet
-			if (TFTPErrorSimMode.isDataOrAckPromptDependent(errorSimMode)) {
-				packetTypeForErrorSim = promptForAckOrData();
+			//TODO change menu
+			//Ask for packet type then the corresponding errors
+			packetTypeForErrorSim = promptForSelectingTransferMode();
+			
+			if(packetTypeForErrorSim == Opcode.READ || packetTypeForErrorSim == Opcode.WRITE){
+				//get error type
+				errorSimMode = promptForError4RequestPacketErrors();
+			}else if(packetTypeForErrorSim == Opcode.DATA){
+				//get error type
+				errorSimMode = promptForError4DataPacketErrors();
+				//get block number
 				packetNumberForErrorSim = promptForPacketNumber();
+			}else if(packetTypeForErrorSim == Opcode.ACK){
+				//get error type
+				errorSimMode = promptForError4AckPacketErrors();
+				//get block number
+				packetNumberForErrorSim = promptForPacketNumber();
+			}else if(packetTypeForErrorSim == Opcode.ERROR){
+				//get error type
+				errorSimMode = promptForError4ErrorPacketErrors();
 			}
-
-			// Prompt the user to select RRQ, WRQ, DATA, ACK, or ERROR
-			if (TFTPErrorSimMode.isDependentOnAllTransferModes(errorSimMode)) {
-				packetTypeForErrorSim = promptForSelectingTransferMode();
-			}
-
 		}
 
 		// Generate Unknown transfer ID
@@ -529,42 +533,6 @@ public class TFTPSim {
 	}
 
 	/**
-	 * Helper method to prompt the user to select the Invalid TFTP packet to
-	 * corrupt
-	 */
-	private static int promptForInvalidPacketMenuSelection() {
-		int userInput;
-		while (true) {
-			System.out.println("Select Invalid TFTP packet to generate: ");
-			System.out.println("(1)  Invalid Opcode");
-			System.out.println("(2)  Extra Data");
-			System.out.println("(3)  Missing Filename");
-			System.out.println("(4)  Missing First Zero on Read or Write Request");
-			System.out.println("(5)  Missing Mode");
-			System.out.println("(6)  Corrupted Mode");
-			System.out.println("(7)  Missing 2nd Zero on Read or Write Request");
-			System.out.println("(8)  Invalid Block Number");
-			System.out.println("(9)  Missing Block Number");
-			System.out.println("(10) Missing Data");
-			System.out.println("(11) Invalid Error Code");
-			System.out.println("(12) Missing Error Code");
-			System.out.println("(13) Missing Error Message");
-			System.out.println("(14) Missing Zero on Error Packet");
-
-			if (sc.hasNextInt()) {
-				userInput = sc.nextInt();
-				if (userInput > 0 && userInput < 15) {
-					break;
-				}
-			} else {
-				sc.next();
-				continue;
-			}
-		}
-		return userInput;
-	}
-
-	/**
 	 * Helper method to prompt the user for the packet number
 	 */
 	private static int promptForPacketNumber() {
@@ -598,32 +566,6 @@ public class TFTPSim {
 			}
 		}
 		return length;
-	}
-
-	/**
-	 * Helper method to prompt the user for to select ACK or DATA
-	 * 
-	 */
-	private static Opcode promptForAckOrData() {
-		Opcode transferMode;
-		int userInput;
-		while (true) {
-			System.out.println("Generate invalid packet on:\n(1) DATA\n(2) ACK");
-			if (sc.hasNextInt()) {
-				userInput = sc.nextInt();
-				if (userInput == 1) {
-					transferMode = Opcode.DATA;
-					break;
-				} else if (userInput == 2) {
-					transferMode = Opcode.ACK;
-					break;
-				}
-			} else {
-				sc.next();
-				continue;
-			}
-		}
-		return transferMode;
 	}
 
 	/**
@@ -661,54 +603,154 @@ public class TFTPSim {
 		}
 		return transferMode;
 	}
+	
+	private static ErrorSimState promptForError4ErrorPacketErrors() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1) Invalid Opcode");
+			System.out.println("(2) Extra Data");
+			System.out.println("(3) Invalid Error Code");
+			System.out.println("(4) Missing Error Code");
+			System.out.println("(5) Missing Error Message");
+			System.out.println("(6) Missing Zero");
 
-	private static void setErrorSimInvalidPacketMode(int menuSelectionInput) {
-		switch (menuSelectionInput) {
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 7) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		switch (userInput) {
 		case 1:
-			errorSimMode = ErrorSimState.INVALID_OPCODE;
-			break;
+			return ErrorSimState.INVALID_OPCODE;
 		case 2:
-			errorSimMode = ErrorSimState.EXTRA_DATA_AT_END;
-			break;
+			return ErrorSimState.EXTRA_DATA_AT_END;
 		case 3:
-			errorSimMode = ErrorSimState.RQ_MISSING_FILENAME;
-			break;
+			return ErrorSimState.ERROR_INVALID_ERROR_CODE;
 		case 4:
-			errorSimMode = ErrorSimState.RQ_MISSING_FIRST_ZERO;
-			break;
+			return ErrorSimState.ERROR_MISSING_ERROR_CODE;
 		case 5:
-			errorSimMode = ErrorSimState.RQ_MISSING_MODE;
-			break;
+			return ErrorSimState.ERROR_MISSING_ERROR_MESSAGE;
 		case 6:
-			errorSimMode = ErrorSimState.RQ_INVALID_MODE;
-			break;
-		case 7:
-			errorSimMode = ErrorSimState.RQ_MISSING_SECOND_ZERO;
-			break;
-		case 8:
-			errorSimMode = ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
-			break;
-		case 9:
-			errorSimMode = ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
-			break;
-		case 10:
-			errorSimMode = ErrorSimState.DATA_MISSING_DATA;
-			break;
-		case 11:
-			errorSimMode = ErrorSimState.ERROR_INVALID_ERROR_CODE;
-			break;
-		case 12:
-			errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_CODE;
-			break;
-		case 13:
-			errorSimMode = ErrorSimState.ERROR_MISSING_ERROR_MESSAGE;
-			break;
-		case 14:
-			errorSimMode = ErrorSimState.ERROR_MISSING_ZERO;
-			break;
+			return ErrorSimState.ERROR_MISSING_ZERO;
 		default:
-			errorSimMode = ErrorSimState.NORMAL;
-			break;
+			return ErrorSimState.NORMAL;
+		}
+	}
+
+	private static ErrorSimState promptForError4AckPacketErrors() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1) Invalid Opcode");
+			System.out.println("(2) Extra Data");
+			System.out.println("(3) Invalid Block Number");
+			System.out.println("(4) Missing Block Number");
+
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 5) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		switch (userInput) {
+		case 1:
+			return ErrorSimState.INVALID_OPCODE;
+		case 2:
+			return ErrorSimState.EXTRA_DATA_AT_END;
+		case 3:
+			return ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
+		case 4:
+			return ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
+		default:
+			return ErrorSimState.NORMAL;
+		}
+	}
+
+	private static ErrorSimState promptForError4DataPacketErrors() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1) Invalid Opcode");
+			System.out.println("(2) Extra Data");
+			System.out.println("(3) Invalid Block Number");
+			System.out.println("(4) Missing Block Number");
+			System.out.println("(5) Missing Data");
+
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 6) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		switch (userInput) {
+		case 1:
+			return ErrorSimState.INVALID_OPCODE;
+		case 2:
+			return ErrorSimState.EXTRA_DATA_AT_END;
+		case 3:
+			return ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
+		case 4:
+			return ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
+		case 5:
+			return ErrorSimState.DATA_MISSING_DATA;
+		default:
+			return ErrorSimState.NORMAL;
+		}
+	}
+
+	private static ErrorSimState promptForError4RequestPacketErrors() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1) Invalid Opcode");
+			System.out.println("(2) Extra Data");
+			System.out.println("(3) Missing Filename");
+			System.out.println("(4) Missing First Zero");
+			System.out.println("(5) Missing Mode");
+			System.out.println("(6) Corrupted Mode");
+			System.out.println("(7) Missing 2nd Zero");
+
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 8) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		switch (userInput) {
+		case 1:
+			return ErrorSimState.INVALID_OPCODE;
+		case 2:
+			return ErrorSimState.EXTRA_DATA_AT_END;
+		case 3:
+			return ErrorSimState.RQ_MISSING_FILENAME;
+		case 4:
+			return ErrorSimState.RQ_MISSING_FIRST_ZERO;
+		case 5:
+			return ErrorSimState.RQ_MISSING_MODE;
+		case 6:
+			return ErrorSimState.RQ_INVALID_MODE;
+		case 7:
+			return ErrorSimState.RQ_MISSING_SECOND_ZERO;
+		default:
+			return ErrorSimState.NORMAL;
 		}
 	}
 }

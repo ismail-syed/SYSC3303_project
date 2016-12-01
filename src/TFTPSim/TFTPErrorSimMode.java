@@ -4,7 +4,6 @@ import java.net.DatagramPacket;
 
 import TFTPPackets.TFTPPacket;
 import TFTPPackets.TFTPPacket.Opcode;
-import TFTPSim.TFTPErrorSimMode.ErrorSimState;
 
 /**
  * The {TFTPErrorSimMode} class manages the state of the Error Simulation
@@ -103,10 +102,24 @@ public class TFTPErrorSimMode {
 	
 	// Helper method to check if the errSimState requires an
 	// DATA and ACK selection prompt
+	public static boolean isDataOrAckDependent(ErrorSimState errSimState){
+		return (errSimState == ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER || 
+				errSimState == ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER ||
+				errSimState == ErrorSimState.DATA_MISSING_DATA ||
+				errSimState == ErrorSimState.INVALID_OPCODE ||
+				errSimState == ErrorSimState.EXTRA_DATA_AT_END);
+	}
+	
+	// Helper method to check if the errSimState requires an
+	// DATA and ACK selection prompt
 	public static boolean isDataOrAckPromptDependent(ErrorSimState errSimState){
 		return (errSimState == ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER || 
 				errSimState == ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER ||
-				errSimState == ErrorSimState.DATA_MISSING_DATA );
+				errSimState == ErrorSimState.DATA_MISSING_DATA);
+	}
+	
+	public static boolean isOnlyDataPromptDependent(ErrorSimState errSimState){
+		return (errSimState == ErrorSimState.DATA_MISSING_DATA);
 	}
 	
 	// Helper method to check if the errSimState requires an
@@ -121,7 +134,9 @@ public class TFTPErrorSimMode {
 		return (simState == ErrorSimState.ERROR_INVALID_ERROR_CODE || 
 				simState == ErrorSimState.ERROR_MISSING_ERROR_CODE ||
 				simState == ErrorSimState.ERROR_MISSING_ERROR_MESSAGE ||
-				simState == ErrorSimState.ERROR_MISSING_ZERO );
+				simState == ErrorSimState.ERROR_MISSING_ZERO ||
+				simState == ErrorSimState.INVALID_OPCODE ||
+				simState == ErrorSimState.EXTRA_DATA_AT_END);
 	}
 	
 	// Helper method to if state is a valid ERROR 4 type
@@ -140,7 +155,9 @@ public class TFTPErrorSimMode {
 				simState == ErrorSimState.RQ_MISSING_FIRST_ZERO ||
 				simState == ErrorSimState.RQ_MISSING_MODE ||
 				simState == ErrorSimState.RQ_INVALID_MODE ||
-				simState == ErrorSimState.RQ_MISSING_SECOND_ZERO
+				simState == ErrorSimState.RQ_MISSING_SECOND_ZERO ||
+				simState == ErrorSimState.INVALID_OPCODE ||
+				simState == ErrorSimState.EXTRA_DATA_AT_END
 		);
 	}
 	
@@ -162,23 +179,13 @@ public class TFTPErrorSimMode {
 		return false;
 	}
 	
-	public boolean checkPacketToCreateInvalidPacket(DatagramPacket packet){
-		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
-		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
-
-		return false;
-	}
-	
 	public boolean isCurrentPacketValidToGenerateInvalidPacket(DatagramPacket packet){
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
 		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
 		if(isInvalidPacketTypeRequest()){
 			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
 		}
-		else if(isDataOrAckPromptDependent(this.simState)){
-			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
-		}
-		else if(isDependentOnAllTransferModes(this.simState)){
+		else if(isDataOrAckDependent(this.simState)){
 			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
 		}
 		else if(isErrorPacketTypeDependent()){
