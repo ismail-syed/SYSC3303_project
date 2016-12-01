@@ -299,14 +299,6 @@ public class TFTPSim {
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
 
-		// Generate ERROR 4 type packet
-		if (simMode.isInvalidPacketType()) {
-			if(simMode.isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
-				System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-				data = PacketCorrupter.corruptPacket(receivePacket.getData(), simMode.getSimState());
-			}
-		}
-
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			// simulate the delay, create the packet, send the packet
@@ -322,7 +314,25 @@ public class TFTPSim {
 					|| Opcode.asEnum((receivePacket.getData()[1])) == Opcode.WRITE) {
 				startNewTransfer = false;
 			}
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+			if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){
+				startNewTransfer = true;
+			}
+			
+			// Generate ERROR 4 type packet
+			if (simMode.isInvalidPacketType()) {
+				if(isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
+					System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()), simMode.getSimState());
+					if(errorSimMode == ErrorSimState.EXTRA_DATA_AT_END){
+						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
+					}
+				}else{
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+				}
+			}else{
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+			}
+			
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			
 			//Generate ERROR 5
@@ -397,14 +407,6 @@ public class TFTPSim {
 			System.out.print("DUPLICATING PACKET: ");
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
-
-		// Generate ERROR 4 type packet
-		if (simMode.isInvalidPacketType()) {
-			if(simMode.isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
-				System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-				data = PacketCorrupter.corruptPacket(receivePacket.getData(), simMode.getSimState());
-			}
-		}
 		
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
@@ -420,8 +422,23 @@ public class TFTPSim {
 			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR) {
 				endOfWRQ = true;
 			}
-			// create the packet
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			
+			// Generate ERROR 4 type packet
+			if (simMode.isInvalidPacketType()) {
+				if(isCurrentPacketValidToGenerateInvalidPacket(receivePacket)){
+					System.out.println("==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()), simMode.getSimState());
+					if(errorSimMode == ErrorSimState.EXTRA_DATA_AT_END){
+						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
+					}
+				}else{
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+				}
+			}else{
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			}
+			
+			
 			// send the packet
 			sendPacketThroughSocket(sendSocket, sendPacket);
 			
@@ -764,5 +781,18 @@ public class TFTPSim {
 		default:
 			return ErrorSimState.NORMAL;
 		}
+	}
+	
+	public boolean isCurrentPacketValidToGenerateInvalidPacket(DatagramPacket packet){
+		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
+		if(packetTypeForErrorSim == currentOpCode){
+			if(currentOpCode == Opcode.DATA || currentOpCode == Opcode.ACK){
+				int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
+				if(packetNumberForErrorSim == currentBlockNumber){return true;}			
+			}else{
+				return true;
+			}
+		}
+		return false;
 	}
 }
