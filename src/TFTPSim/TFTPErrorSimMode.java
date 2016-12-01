@@ -100,64 +100,12 @@ public class TFTPErrorSimMode {
 		this.simState = state;
 	}
 	
-	// Helper method to check if the errSimState requires an
-	// DATA and ACK selection prompt
-	public static boolean isDataOrAckDependent(ErrorSimState errSimState){
-		return (errSimState == ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER || 
-				errSimState == ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER ||
-				errSimState == ErrorSimState.DATA_MISSING_DATA ||
-				errSimState == ErrorSimState.INVALID_OPCODE ||
-				errSimState == ErrorSimState.EXTRA_DATA_AT_END);
-	}
-	
-	// Helper method to check if the errSimState requires an
-	// DATA and ACK selection prompt
-	public static boolean isDataOrAckPromptDependent(ErrorSimState errSimState){
-		return (errSimState == ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER || 
-				errSimState == ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER ||
-				errSimState == ErrorSimState.DATA_MISSING_DATA);
-	}
-	
-	public static boolean isOnlyDataPromptDependent(ErrorSimState errSimState){
-		return (errSimState == ErrorSimState.DATA_MISSING_DATA);
-	}
-	
-	// Helper method to check if the errSimState requires an
-	// a prompt for WRQ, RRQ, DATA, ACK or ERROR
-	public static boolean isDependentOnAllTransferModes(ErrorSimState errSimState){
-		return (errSimState == ErrorSimState.INVALID_OPCODE || 
-				errSimState == ErrorSimState.EXTRA_DATA_AT_END );
-	}
-	
-	// Helper method to check if the simState is in a ERROR packet type mode
-	public boolean isErrorPacketTypeDependent(){
-		return (simState == ErrorSimState.ERROR_INVALID_ERROR_CODE || 
-				simState == ErrorSimState.ERROR_MISSING_ERROR_CODE ||
-				simState == ErrorSimState.ERROR_MISSING_ERROR_MESSAGE ||
-				simState == ErrorSimState.ERROR_MISSING_ZERO ||
-				simState == ErrorSimState.INVALID_OPCODE ||
-				simState == ErrorSimState.EXTRA_DATA_AT_END);
-	}
-	
 	// Helper method to if state is a valid ERROR 4 type
 	public boolean isInvalidPacketType(){
 		return (simState != ErrorSimState.NORMAL || 
 				simState != ErrorSimState.LOST_PACKET ||
 				simState != ErrorSimState.DELAY_PACKET ||
 				simState != ErrorSimState.DUPLICATE_PACKET
-		);
-	}
-	
-	// Helper method to check if the simState is in a mode
-	// that generates an invalid packet (RRQ/WRQ) packet
-	public boolean isInvalidPacketTypeRequest(){
-		return (simState == ErrorSimState.RQ_MISSING_FILENAME || 
-				simState == ErrorSimState.RQ_MISSING_FIRST_ZERO ||
-				simState == ErrorSimState.RQ_MISSING_MODE ||
-				simState == ErrorSimState.RQ_INVALID_MODE ||
-				simState == ErrorSimState.RQ_MISSING_SECOND_ZERO ||
-				simState == ErrorSimState.INVALID_OPCODE ||
-				simState == ErrorSimState.EXTRA_DATA_AT_END
 		);
 	}
 	
@@ -186,20 +134,4 @@ public class TFTPErrorSimMode {
 		}
 		return false;
 	}
-	
-	public boolean isCurrentPacketValidToGenerateInvalidPacket(DatagramPacket packet){
-		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
-		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
-		if(isInvalidPacketTypeRequest()){
-			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
-		}
-		else if(isDataOrAckDependent(this.simState)){
-			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
-		}
-		else if(isErrorPacketTypeDependent()){
-			return currentOpCode == Opcode.ERROR;
-		}
-		return false;
-	}
-	
 }
