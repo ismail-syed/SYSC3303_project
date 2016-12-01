@@ -172,9 +172,17 @@ public class TFTPErrorSimMode {
 	public boolean checkPacketToCreateError(ErrorSimState simStateToCheck, DatagramPacket packet) {
 		Opcode currentOpCode = Opcode.asEnum((packet.getData()[1]));
 		int currentBlockNumber = TFTPPacket.getBlockNumber(packet.getData());
-		if(this.simState == simStateToCheck){
-			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE)	return true;
-			return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
+		
+		// Ensure that the simState is the state that we are comparing
+		// and ensure the packet passed in contains the opcode that we are comparing
+		if(this.simState == simStateToCheck && this.packetType == currentOpCode){
+			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE){
+				return true;
+			}
+			if(this.packetNumer == currentBlockNumber) {
+				return (this.packetType == currentOpCode && this.packetNumer == currentBlockNumber);
+			}
+			
 		}
 		return false;
 	}
