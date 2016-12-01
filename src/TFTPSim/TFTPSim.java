@@ -175,16 +175,16 @@ public class TFTPSim {
 					continue;
 				}
 				switch (transferMode) {
-				case 0:
+				case 1:
 					packetTypeForErrorSim = Opcode.DATA;
 					break;
-				case 1:
+				case 2:
 					packetTypeForErrorSim = Opcode.ACK;
 					break;
-				case 2:
+				case 3:
 					packetTypeForErrorSim = Opcode.READ;
 					break;
-				case 3:
+				case 4:
 					packetTypeForErrorSim = Opcode.WRITE;
 					break;
 				default:
@@ -309,6 +309,7 @@ public class TFTPSim {
 
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
+			// simulate the delay, create the packet, send the packet
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		} else {
 			// Send packet to the server
@@ -407,6 +408,7 @@ public class TFTPSim {
 		
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
+			// simulate the delay, create the packet, send the packet
 			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
 		} else {
 			// check if its the last data block from client on RRQ
@@ -509,11 +511,21 @@ public class TFTPSim {
 
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port) {
 		System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
-		sendPacket = new DatagramPacket(data, packet.getLength(), packet.getAddress(), port);
-
 		// Send the duplicate packet at the specified delay time
-		Thread delayThread = new Thread(new ErrorSimDelayThread(this, socket, sendPacket, simMode.getDelayLength()));
-		delayThread.start();
+		try{
+			Thread.sleep(simMode.getDelayLength());
+		} catch(InterruptedException e){
+			System.out.println("Error occured while trying to delay packet.");
+		}
+		packet = new DatagramPacket(data, packet.getLength(), packet.getAddress(), port);
+		sendPacketThroughSocket(socket, packet);
+		System.out.println("DELAYED PACKET SENT: After waiting " + simMode.getDelayLength() + "ms\n");
+
+		// Commented out by Ismail
+		// This second thread is what seem to be causing 
+		// the byte array of all zeros logged in Issue #33 
+//		Thread delayThread = new Thread(new ErrorSimDelayThread(this, socket, sendPacket, simMode.getDelayLength()));
+//		delayThread.start();
 	}
 
 	/**
