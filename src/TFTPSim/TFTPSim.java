@@ -31,6 +31,11 @@ public class TFTPSim {
 	private boolean listenOnClient;
 	private byte[] data;
 
+	// We use this to cache the delayed packet's byte data and compare it to
+	// the one we've received to ensure they are different.
+	// This is important for the delay error sim mode
+	private byte[] delayedPacketByteData = new byte[516];
+
 	// Ports
 	private int serverPort = 69;
 	private int clientPort;
@@ -213,10 +218,10 @@ public class TFTPSim {
 		try {
 			// Construct a datagram socket and bind it to port 23
 			receiveSocket = new DatagramSocket(23);
-			
+
 			// Construct a datagram socket and bind it to any available
 			sendReceiveSocket = new DatagramSocket();
-			
+
 			// socket that is used to handle server side communication
 			sendSocket = new DatagramSocket();
 		} catch (SocketException se) {
@@ -259,7 +264,13 @@ public class TFTPSim {
 		System.out.println("\nSimulator: Waiting for packet from client...\n");
 		data = new byte[516];
 		receivePacket = new DatagramPacket(data, data.length);
-		waitTillPacketReceived(receiveSocket, receivePacket);
+
+		// Keep listening until we know that the current packet received is not
+		// the same as delayed packet from before
+		// Important for delay error sim mode
+		do {
+			waitTillPacketReceived(receiveSocket, receivePacket);
+		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket)));
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
@@ -306,6 +317,7 @@ public class TFTPSim {
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			// simulate the delay, create the packet, send the packet
 			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+			delayedPacketByteData = getDataArray(data, receivePacket);
 		} else {
 			// Send packet to the server
 			// check if its the last data on a WRQ
@@ -324,10 +336,8 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					System.out.println(
-							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-					data = PacketCorrupter.corruptPacket(
-							Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()),
+					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
+					data = PacketCorrupter.corruptPacket(getDataArray(receivePacket.getData(), receivePacket),
 							simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
 				} else {
@@ -368,7 +378,13 @@ public class TFTPSim {
 		System.out.println("Simulator: Waiting for packet from server...");
 		data = new byte[516];
 		receivePacket = new DatagramPacket(data, data.length);
-		waitTillPacketReceived(sendReceiveSocket, receivePacket);
+
+		// Keep listening until we know that the current packet received is not
+		// the same as the delayed packets
+		// Important for delay error sim mode
+		do {
+			waitTillPacketReceived(sendReceiveSocket, receivePacket);
+		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket)));
 
 		// Update the server port since to where the receivePacket came from
 		serverPort = receivePacket.getPort();
@@ -410,6 +426,7 @@ public class TFTPSim {
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			// simulate the delay, create the packet, send the packet
 			simulateDelayedPacket(sendSocket, receivePacket, clientPort);
+			delayedPacketByteData = getDataArray(data, receivePacket);
 		} else {
 			// check if its the last data block from client on RRQ
 			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA && receivePacket.getLength() < 516) {
@@ -424,10 +441,8 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					System.out.println(
-							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
-							simMode.getSimState());
+					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
+					data = PacketCorrupter.corruptPacket(getDataArray(data, receivePacket), simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
 				} else {
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
@@ -470,8 +485,7 @@ public class TFTPSim {
 		System.out.println("Simulator: Packet received");
 		System.out.println("From host: " + packet.getAddress());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: " 
-				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+		System.out.println("Byte Array: " + TFTPPacket.toString(getDataArray(data, packet)) + "\n");
 	}
 
 	/**
@@ -486,8 +500,7 @@ public class TFTPSim {
 		System.out.println("To host: " + packet.getAddress());
 		System.out.println("Destination host port: " + packet.getPort());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: "
-				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+		System.out.println("Byte Array: " + TFTPPacket.toString(getDataArray(data, packet)) + "\n");
 	}
 
 	/**
@@ -795,5 +808,10 @@ public class TFTPSim {
 			}
 		}
 		return false;
+	}
+
+	// Helper method to get the data packet array from a packet
+	private byte[] getDataArray(byte[] inputData, DatagramPacket packet) {
+		return Arrays.copyOfRange(inputData, 0, packet.getLength());
 	}
 }
