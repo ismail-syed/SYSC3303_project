@@ -385,7 +385,9 @@ public class TFTPClient {
 				ErrorPacket errorPacket = new ErrorPacket(data);
 				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
 				firstTime = true;
-				if (tftpWriter != null){tftpWriter.closeHandle();}
+				if (tftpWriter != null) {
+					tftpWriter.closeHandle();
+				}
 
 			} else {
 				if (verbose)
