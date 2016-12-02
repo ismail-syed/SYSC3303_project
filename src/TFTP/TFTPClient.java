@@ -43,6 +43,7 @@ public class TFTPClient {
 	private int sendPort;
 	private TFTPPacket lastPacketSent;
 	private InetSocketAddress serverInetSocketAddress;
+	private static boolean lastAckSent;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -59,6 +60,7 @@ public class TFTPClient {
 		firstTime = true;
 		firstReceive = true;
 		lastRequest = null;
+		lastAckSent = false;
 		try {
 			// Construct a datagram socket and bind it to any available
 			// port on the local host machine. This socket will be used to
@@ -299,7 +301,7 @@ public class TFTPClient {
 						if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
 							tftpWriter.writeToFile(dataPacket.getData());
 							previousBlockNumber = dataPacket.getBlockNumber();
-						} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1) {
+						} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1 && !lastAckSent) {
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
 											"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber()),
@@ -333,6 +335,7 @@ public class TFTPClient {
 					}
 					if (dataPacket.getData().length < 512) {
 						System.out.println("\nComplete File Has Been Received\n");
+						lastAckSent = true;
 						firstTime = true;
 						tftpWriter.closeHandle();
 					}
@@ -400,8 +403,13 @@ public class TFTPClient {
 			}
 
 		} catch (SocketTimeoutException e) {
-			if (verbose)
+			if (verbose && !lastAckSent)
 				System.out.println("\nServer took too long to respond");
+			if (lastAckSent) {
+				lastAckSent = false;
+				System.out.println("\nTransfer Succeeded");
+				return;
+			}
 			if (lastDataPacketSent == null) {
 				// This case should never happen
 				if (lastRequest != null) {
@@ -546,7 +554,7 @@ public class TFTPClient {
 
 		while (true) {
 			try {
-				if (firstTime) {
+				if (firstTime && !lastAckSent) {
 					lastDataPacketSent = null;
 					c.sendRequest(in);
 					firstTime = false;
