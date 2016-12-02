@@ -410,7 +410,7 @@ public class TFTPClient {
 				} catch (MalformedPacketException e2) {
 
 					sendPacketToServer(
-							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Data Packet received with an invalid format"),
+							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK Packet received with an invalid format"),
 							receivePacket.getAddress(), receivePacket.getPort());
 					if (verbose)
 						System.out.println("DATA Packet received is in an invalid format");
@@ -418,11 +418,28 @@ public class TFTPClient {
 				}
 			} else if (opcode == Opcode.ERROR) { // check for error packet and
 													// print message
-				ErrorPacket errorPacket = new ErrorPacket(data);
-				System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
-				firstTime = true;
-				if (tftpWriter != null) {
-					tftpWriter.closeHandle();
+				try {
+					ErrorPacket errorPacket = new ErrorPacket(data);
+					System.out.println("\nError Message: " + errorPacket.getErrorMessage() + "\n");
+					firstTime = true;
+					if (tftpWriter != null) {
+						tftpWriter.closeHandle();
+					}
+				} catch (MalformedPacketException e1) {
+					sendPacketToServer(
+							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+									"ERROR Packet received with an invalid format"),
+							receivePacket.getAddress(), receivePacket.getPort());
+					if (verbose)
+						System.out.println("ERROR Packet received is in an invalid format");
+					firstTime = true;
+				} catch (PacketOverflowException e2) {
+					sendPacketToServer(
+							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ERROR Packet received doesn't end with zero"),
+							receivePacket.getAddress(), receivePacket.getPort());
+					if (verbose)
+						System.out.println("ERROR Packet received doesn't end with zero");
+					firstTime = true;
 				}
 
 			} else {
@@ -435,9 +452,7 @@ public class TFTPClient {
 				firstTime = true;
 			}
 
-		} catch (
-
-		SocketTimeoutException e) {
+		} catch (SocketTimeoutException e) {
 			if (verbose && !lastAckSent)
 				System.out.println("\nServer took too long to respond");
 			if (lastAckSent) {
