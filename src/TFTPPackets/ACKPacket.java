@@ -52,7 +52,7 @@ public class ACKPacket extends TFTPPacket {
         // Get opcode from second byte
         byte opcodeAsByte = bb.get();
         if (Opcode.asEnum((int) opcodeAsByte) != Opcode.ACK) {
-            throw new MalformedPacketException("RRQPacket does not have a valid opcode");
+            throw new MalformedPacketException("ACKPacket does not have a valid opcode");
         }
 
         // Get block number

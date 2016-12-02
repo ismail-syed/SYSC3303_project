@@ -339,12 +339,7 @@ public class TFTPSim {
 					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
 					data = PacketCorrupter.corruptPacket(getDataArray(receivePacket.getData(), receivePacket),
 							simMode.getSimState());
-					if (errorSimMode == ErrorSimState.EXTRA_DATA_AT_END) {
-						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
-					} else {
-						sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-								serverPort);
-					}
+					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
 				} else {
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 							serverPort);
@@ -448,12 +443,7 @@ public class TFTPSim {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
 					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
 					data = PacketCorrupter.corruptPacket(getDataArray(data, receivePacket), simMode.getSimState());
-					if (errorSimMode == ErrorSimState.EXTRA_DATA_AT_END) {
-						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
-					} else {
-						sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
-								clientPort);
-					}
+					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
 				} else {
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 							clientPort);

@@ -89,8 +89,7 @@ public class TFTPServerTransferThread implements Runnable {
                 TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
                 switch (opcode) {
                     case UNKNOWN:
-                        verboseLog("Received unknown packet type.");
-                        endTransfer();
+                        sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid Opcode"));
                         break;
                     case READ:
                         processReadPacket(data);
@@ -124,10 +123,12 @@ public class TFTPServerTransferThread implements Runnable {
                 //end transfer on illegal operation or unknown TID
                 endTransfer();
             }
-        } catch (MalformedPacketException | PacketOverflowException | IOException e) {
-            verboseLog("Error packet received in invalid");
-            sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
-            e.printStackTrace();
+        } catch (MalformedPacketException e) {
+            verboseLog("Invalid Error packet");
+            sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+        } catch (PacketOverflowException | IOException e) {
+            verboseLog("Invalid Error packet");
+            sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid Error packet"));
         }
     }
 
@@ -154,9 +155,10 @@ public class TFTPServerTransferThread implements Runnable {
                 System.out.println("Access Violation");
                 sendPacketToClient(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"));
             } catch (PacketOverflowException | InvalidBlockNumberException e) {
-                e.printStackTrace();
+                verboseLog("Invalid RRQ packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid RRQ packet"));
             } catch (MalformedPacketException e){
-                verboseLog("Invalid file name");
+                verboseLog("Invalid RRQ name");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
             } catch (BufferUnderflowException e){
                 verboseLog("Packet missing delimiting 0's");
@@ -200,9 +202,10 @@ public class TFTPServerTransferThread implements Runnable {
                     throw e;
                 }
             } catch (InvalidBlockNumberException | PacketOverflowException e) {
-                e.printStackTrace();
+                verboseLog("Invalid WRQ packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid WRQ packet"));
             } catch (MalformedPacketException e){
-                verboseLog("Invalid file name");
+                verboseLog("Invalid WRQ packet");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
             }
         } else {
@@ -246,8 +249,12 @@ public class TFTPServerTransferThread implements Runnable {
                     default:
                         throw e;
                 }
-            } catch (InvalidBlockNumberException | MalformedPacketException | PacketOverflowException e) {
-                e.printStackTrace();
+            } catch (InvalidBlockNumberException | PacketOverflowException e) {
+                verboseLog("Invalid DATA packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid DATA packet"));
+            } catch (MalformedPacketException e) {
+                verboseLog("Invalid DATA packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
             }
         } else {
             verboseLog("Received DATA packet without receiving a RRQ packet first");
@@ -283,7 +290,11 @@ public class TFTPServerTransferThread implements Runnable {
                         endTransfer();
                     }
                 }
-            } catch (MalformedPacketException | PacketOverflowException | InvalidBlockNumberException e) {
+            } catch (MalformedPacketException e) {
+                verboseLog("Invalid ACK packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+            } catch (PacketOverflowException | InvalidBlockNumberException e) {
+                verboseLog("Invalid ACK packet");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid ACK packet"));
             }
         } else {
