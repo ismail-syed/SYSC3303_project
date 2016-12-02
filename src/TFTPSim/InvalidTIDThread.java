@@ -33,7 +33,7 @@ public class InvalidTIDThread implements Runnable{
 		try {
 			clientSocket = new DatagramSocket();
 			sendReceiveSocket = new DatagramSocket();
-			System.out.println("Creating Thread for invalid TID with port " + sendReceiveSocket.getPort() + "... \n");
+			System.out.println("Creating Thread for invalid TID with Server Port " + sendReceiveSocket.getPort() + " and Client Port" + clientSocket.getPort() + "... \n");
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
