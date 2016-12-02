@@ -424,7 +424,7 @@ public class TFTPClient {
 				if (verbose)
 					System.out.println("Resending last DATA packet");
 				if (run == Mode.TEST)
-					sendPacketToServer(lastDataPacketSent, InetAddress.getLocalHost(), receivePacket.getPort());
+					sendPacketToServer(lastDataPacketSent, InetAddress.getLocalHost(), sendPort);
 				else
 					sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
 				counter++;
@@ -455,7 +455,7 @@ public class TFTPClient {
 		// Send packet to client
 		if (run == Mode.TEST)
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address,
-					port);
+					sendPort);
 		else
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, port);
 		// printing out information about the packet
