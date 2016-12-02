@@ -336,7 +336,10 @@ public class TFTPSim {
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
 					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){startNewTransfer = false;}
-					data = PacketCorrupter.corruptPacket(getDataArray(receivePacket.getData(), receivePacket),
+					System.out.println(
+							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+					data = PacketCorrupter.corruptPacket(
+							Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()),
 							simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
@@ -442,7 +445,10 @@ public class TFTPSim {
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
 					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){endOfWRQ = false;}
-					data = PacketCorrupter.corruptPacket(getDataArray(data, receivePacket), simMode.getSimState());
+					System.out.println(
+							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
+					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
+							simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
@@ -486,7 +492,8 @@ public class TFTPSim {
 		System.out.println("Simulator: Packet received");
 		System.out.println("From host: " + packet.getAddress());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: " + TFTPPacket.toString(getDataArray(data, packet)) + "\n");
+		System.out.println("Byte Array: " 
+				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
 	/**
@@ -501,7 +508,8 @@ public class TFTPSim {
 		System.out.println("To host: " + packet.getAddress());
 		System.out.println("Destination host port: " + packet.getPort());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: " + TFTPPacket.toString(getDataArray(data, packet)) + "\n");
+		System.out.println("Byte Array: "
+				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
 	/**
