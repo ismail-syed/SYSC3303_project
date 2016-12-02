@@ -89,8 +89,7 @@ public class TFTPServerTransferThread implements Runnable {
                 TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
                 switch (opcode) {
                     case UNKNOWN:
-                        verboseLog("Received unknown packet type.");
-                        endTransfer();
+                        sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid Opcode"));
                         break;
                     case READ:
                         processReadPacket(data);
