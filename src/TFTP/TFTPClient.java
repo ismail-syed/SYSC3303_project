@@ -43,6 +43,7 @@ public class TFTPClient {
 	private int sendPort;
 	private InetSocketAddress serverInetSocketAddress;
 	private static boolean lastAckSent;
+	private static InetAddress ip;
 
 	// we can run in normal (send directly to server) or test
 	// (send to simulator) mode
@@ -177,6 +178,38 @@ public class TFTPClient {
 						}
 					}
 				}
+			} else if (cmd.equals("cip")) {// change directory
+				System.out.println("Type \"DEFAULT\" to use the local ip or Enter the ip of the Server/Sim pc");
+
+				for (;;) {
+					String userInput = sc.nextLine();
+					if (userInput.equals("DEFAULT")) {
+						// if default print the ip and finish
+						try {
+							ip = InetAddress.getLocalHost();
+						} catch (UnknownHostException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						System.out.println("You are now using local host: " + ip);
+						System.out.println("\nYou can change the directory at any point by typing \"cip\"\n");
+						break;
+					} else {
+						try {
+							if(userInput == null || userInput.equals("")) {
+								System.out.println("Invalid IP\nPlease Try Again.");
+								continue; 
+							}
+							if ((ip = InetAddress.getByName(userInput)) instanceof InetAddress) {
+								// if the path was provided finish
+								System.out.println("You have entered a valid IP\n");
+								break;
+							}
+						} catch (UnknownHostException e) {
+							System.out.println("Invalid IP\nPlease Try Again.");
+						}
+					}
+				}
 			} else if (cmd.equals("QUIT")) {// quit
 				System.out.println("Client: Closing socket and exiting.");
 
@@ -186,16 +219,11 @@ public class TFTPClient {
 				System.exit(0);
 			}
 		}
-		try {// Send the datagram packet to the server via the send/receive
-				// socket.
-			lastRequest = tftpPacket;
-			sendPacketToServer(tftpPacket, InetAddress.getLocalHost(), sendPort);
-			System.out.println("Client: Packet sent.");
-			firstReceive = true;
+		lastRequest = tftpPacket;
+		sendPacketToServer(tftpPacket, sendPort);
+		System.out.println("Client: Packet sent.");
+		firstReceive = true;
 
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
 	}
 
 	/**
@@ -230,7 +258,7 @@ public class TFTPClient {
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on Data Packet " + dataPacket.getBlockNumber()),
-									receivePacket.getAddress(), receivePacket.getPort());
+									receivePacket.getPort());
 							return;
 						} catch (Exception e1) {
 							// TODO Auto-generated catch block
@@ -244,7 +272,7 @@ public class TFTPClient {
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.UNKNOWN_TID,
 											"Unknown transfer ID on ACK Packet " + ackPacket.getBlockNumber()),
-									receivePacket.getAddress(), receivePacket.getPort());
+									receivePacket.getPort());
 							return;
 						} catch (Exception e) {
 							// TODO Auto-generated catch block
@@ -307,7 +335,7 @@ public class TFTPClient {
 								sendPacketToServer(
 										new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
 												"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber()),
-										receivePacket.getAddress(), receivePacket.getPort());
+										receivePacket.getPort());
 								if (verbose)
 									System.out.println(
 											"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber());
@@ -323,7 +351,7 @@ public class TFTPClient {
 								System.out.println("Access Violation");
 								firstTime = true;
 								sendPacketToServer(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"),
-										receivePacket.getAddress(), receivePacket.getPort());
+										receivePacket.getPort());
 								tftpWriter.closeHandle();
 								break;
 							default:
@@ -334,7 +362,7 @@ public class TFTPClient {
 						// create an ack packet from corresponding block number
 						if (!firstTime) {
 							tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-							sendPacketToServer(tftpPacket, receivePacket.getAddress(), receivePacket.getPort());
+							sendPacketToServer(tftpPacket, receivePacket.getPort());
 						}
 						if (dataPacket.getData().length < 512) {
 							System.out.println("\nComplete File Has Been Received\n");
@@ -345,7 +373,7 @@ public class TFTPClient {
 					} else {
 						System.out.println("\nError Message: Disk Full or Allocation Exceded\n");
 						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
-								receivePacket.getAddress(), receivePacket.getPort());
+								receivePacket.getPort());
 						tftpWriter.closeHandle();
 						firstTime = true;
 					}
@@ -353,17 +381,15 @@ public class TFTPClient {
 					if (verbose)
 						System.out.println("Large amount of data received in DATA Packet");
 
-					sendPacketToServer(
-							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
-									"Data Packet received with Data larger than 512"),
-							receivePacket.getAddress(), receivePacket.getPort());
+					sendPacketToServer(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+							"Data Packet received with Data larger than 512"), receivePacket.getPort());
 					firstTime = true;
 
 				} catch (MalformedPacketException e2) {
 
 					sendPacketToServer(
 							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Data Packet received with an invalid format"),
-							receivePacket.getAddress(), receivePacket.getPort());
+							receivePacket.getPort());
 					if (verbose)
 						System.out.println("DATA Packet received is in an invalid format");
 					firstTime = true;
@@ -384,7 +410,7 @@ public class TFTPClient {
 							sendPacketToServer(
 									new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
 											"Corrupt Block number on ACK Packet " + ackPacket.getBlockNumber()),
-									receivePacket.getAddress(), receivePacket.getPort());
+									receivePacket.getPort());
 							if (verbose)
 								System.out.println("Corrupt Block number on ACK Packet " + ackPacket.getBlockNumber());
 							tftpWriter.closeHandle();
@@ -400,7 +426,7 @@ public class TFTPClient {
 							}
 							lastDataPacketSent = new DataPacket(previousBlockNumber,
 									tftpReader.getFileBlock(previousBlockNumber));
-							sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+							sendPacketToServer(lastDataPacketSent, receivePacket.getPort());
 						}
 						if (ackPacket.getBlockNumber() == tftpReader.getNumberOfBlocks()) {
 							System.out.println("\nFile transfer complete");
@@ -411,7 +437,7 @@ public class TFTPClient {
 
 					sendPacketToServer(
 							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK Packet received with an invalid format"),
-							receivePacket.getAddress(), receivePacket.getPort());
+							receivePacket.getPort());
 					if (verbose)
 						System.out.println("DATA Packet received is in an invalid format");
 					firstTime = true;
@@ -426,17 +452,15 @@ public class TFTPClient {
 						tftpWriter.closeHandle();
 					}
 				} catch (MalformedPacketException e1) {
-					sendPacketToServer(
-							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
-									"ERROR Packet received with an invalid format"),
-							receivePacket.getAddress(), receivePacket.getPort());
+					sendPacketToServer(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
+							"ERROR Packet received with an invalid format"), receivePacket.getPort());
 					if (verbose)
 						System.out.println("ERROR Packet received is in an invalid format");
 					firstTime = true;
 				} catch (PacketOverflowException e2) {
 					sendPacketToServer(
 							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ERROR Packet received doesn't end with zero"),
-							receivePacket.getAddress(), receivePacket.getPort());
+							receivePacket.getPort());
 					if (verbose)
 						System.out.println("ERROR Packet received doesn't end with zero");
 					firstTime = true;
@@ -446,7 +470,7 @@ public class TFTPClient {
 				if (verbose)
 					System.out.println("Corrupt Opcode on received Packet");
 				sendPacketToServer(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Corrupt Opcode on received Packet "),
-						receivePacket.getAddress(), receivePacket.getPort());
+						receivePacket.getPort());
 				if (tftpWriter != null)
 					tftpWriter.closeHandle();
 				firstTime = true;
@@ -465,7 +489,7 @@ public class TFTPClient {
 				if (lastRequest != null) {
 					if (verbose)
 						System.out.println("Resending last RQ packet");
-					sendPacketToServer(lastRequest, InetAddress.getLocalHost(), sendPort);
+					sendPacketToServer(lastRequest, sendPort);
 				} else {
 					if (verbose)
 						System.out.println("No previous DATA packet sent, waiting for ACK/DATA");
@@ -482,7 +506,7 @@ public class TFTPClient {
 				if (verbose)
 					System.out.println("Resending last DATA/RQ packet");
 
-				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+				sendPacketToServer(lastDataPacketSent, receivePacket.getPort());
 
 				counter++;
 				if (counter == 10) {
@@ -508,13 +532,12 @@ public class TFTPClient {
 	 *            packet and send it to the error simulator or the server
 	 * 
 	 */
-	public void sendPacketToServer(TFTPPacket tftpPacket, InetAddress address, int port) {
+	public void sendPacketToServer(TFTPPacket tftpPacket, int port) {
 		// Send packet to client
 		if (run == Mode.TEST)
-			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address,
-					sendPort);
+			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, sendPort);
 		else
-			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, address, port);
+			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
 		// printing out information about the packet
 		if (verbose) {
 			System.out.println("\nClient: Sending packet");
@@ -566,6 +589,38 @@ public class TFTPClient {
 				} else {
 					// if the directory does not exist, ask for an input again
 					System.out.println("Invalid Directory\nPlease Try Again.");
+				}
+			}
+		}
+
+		System.out.println("Type \"DEFAULT\" to use the local ip or Enter the ip of the Server/Sim pc");
+
+		for (;;) {
+			String userInput = in.nextLine();
+			if (userInput.equals("DEFAULT")) {
+				// if default print the ip and finish
+				try {
+					ip = InetAddress.getLocalHost();
+				} catch (UnknownHostException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("You are now using local host: " + ip);
+				System.out.println("\nYou can change the directory at any point by typing \"cip\"\n");
+				break;
+			} else {
+				try {
+					if(userInput == null || userInput.equals("")) {
+						System.out.println("Invalid IP\nPlease Try Again.");
+						continue;
+					}
+					if ((ip = InetAddress.getByName(userInput)) instanceof InetAddress) {
+						// if the path was provided finish
+						System.out.println("You have entered a valid IP\n");
+						break;
+					}
+				} catch (UnknownHostException e) {
+					System.out.println("Invalid IP\nPlease Try Again.");
 				}
 			}
 		}
