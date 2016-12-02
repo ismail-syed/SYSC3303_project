@@ -303,7 +303,7 @@ public class TFTPClient {
 							if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
 								tftpWriter.writeToFile(dataPacket.getData());
 								previousBlockNumber = dataPacket.getBlockNumber();
-							} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1 && !lastAckSent) {
+							} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1) {
 								sendPacketToServer(
 										new ErrorPacket(ErrorCode.ILLEGAL_OPERATION,
 												"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber()),
