@@ -325,6 +325,8 @@ public class TFTPSim {
 					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()), simMode.getSimState());
 					if(errorSimMode == ErrorSimState.EXTRA_DATA_AT_END){
 						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
+					}else{
+						sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 					}
 				}else{
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
@@ -430,6 +432,8 @@ public class TFTPSim {
 					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()), simMode.getSimState());
 					if(errorSimMode == ErrorSimState.EXTRA_DATA_AT_END){
 						sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
+					}else{
+						sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 					}
 				}else{
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
