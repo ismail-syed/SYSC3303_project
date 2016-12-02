@@ -102,9 +102,9 @@ public class TFTPErrorSimMode {
 	
 	// Helper method to if state is a valid ERROR 4 type
 	public boolean isInvalidPacketType(){
-		return (simState != ErrorSimState.NORMAL || 
-				simState != ErrorSimState.LOST_PACKET ||
-				simState != ErrorSimState.DELAY_PACKET ||
+		return (simState != ErrorSimState.NORMAL && 
+				simState != ErrorSimState.LOST_PACKET &&
+				simState != ErrorSimState.DELAY_PACKET &&
 				simState != ErrorSimState.DUPLICATE_PACKET
 		);
 	}

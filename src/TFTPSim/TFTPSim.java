@@ -112,7 +112,6 @@ public class TFTPSim {
 
 		// Generate Illegal TFTP operation
 		if (input == 1) {
-			// TODO change menu
 			// Ask for packet type then the corresponding errors
 			packetTypeForErrorSim = promptForSelectingTransferMode();
 
@@ -336,10 +335,11 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
+					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){startNewTransfer = false;}
 					data = PacketCorrupter.corruptPacket(getDataArray(receivePacket.getData(), receivePacket),
 							simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
+					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 							serverPort);
@@ -441,9 +441,10 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					System.out.println("==> " + TFTPPacket.toString(getDataArray(data, receivePacket)));
+					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){endOfWRQ = false;}
 					data = PacketCorrupter.corruptPacket(getDataArray(data, receivePacket), simMode.getSimState());
 					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
+					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
 					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
 							clientPort);
