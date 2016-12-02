@@ -69,6 +69,8 @@ public class TFTPServerTransferThread implements Runnable {
     private void sendAndReceive() {
         //check for unknown TID
         if(!clientInetSocketAddress.equals(packetFromClient.getSocketAddress())){
+            verboseLog("Expected TID: " + clientInetSocketAddress);
+            verboseLog("Received TID: " + packetFromClient.getSocketAddress());
             verboseLog("Received unknown TID, replying with unknown TID packet (ERROR CODE 5)");
             sendPacketToClient(new ErrorPacket(ErrorCode.UNKNOWN_TID, "Unknown TID"));
         } else {
@@ -81,8 +83,7 @@ public class TFTPServerTransferThread implements Runnable {
                 verboseLog("Host port: " + packetFromClient.getPort());
                 int len = packetFromClient.getLength();
                 verboseLog("Length: " + len);
-                verboseLog("Containing: ");
-                verboseLog(new String(Arrays.copyOfRange(data, 0, len)));
+                verboseLog("Containing: " + new String(Arrays.copyOfRange(data, 0, len)));
                 verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
                 //Get opcode
                 TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
@@ -297,7 +298,7 @@ public class TFTPServerTransferThread implements Runnable {
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
                     clientInetSocketAddress.getAddress(), clientInetSocketAddress.getPort());
             //printing out information about the packet
-            verboseLog("Server: Sending packet");
+            verboseLog("\nServer: Sending packet");
             verboseLog("To host: " + sendPacket.getAddress());
             verboseLog("Destination host port: " + sendPacket.getPort());
             verboseLog("Length: " + sendPacket.getLength());
@@ -308,7 +309,9 @@ public class TFTPServerTransferThread implements Runnable {
                 e.printStackTrace();
             }
             if (tftpPacket instanceof ErrorPacket) {
-                endTransfer();
+                if(!((ErrorPacket) tftpPacket).getErrorCode().equals(ErrorCode.UNKNOWN_TID)){
+                    endTransfer();
+                }
             } else if (tftpPacket instanceof DataPacket) {
                 lastDataPacketSent = (DataPacket) tftpPacket;
             } else if (tftpPacket instanceof ACKPacket) {
@@ -365,6 +368,12 @@ public class TFTPServerTransferThread implements Runnable {
         packetFromClient = new DatagramPacket(dataBuffer, dataBuffer.length);
         try {
             sendReceiveSocket.receive(packetFromClient);
+            //printing out information about the packet
+            verboseLog("\nServer: Received packet");
+            verboseLog("From host: " + packetFromClient.getAddress());
+            verboseLog("Destination host port: " + packetFromClient.getPort());
+            verboseLog("Length: " + packetFromClient.getLength());
+            verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(packetFromClient.getData(), 0, packetFromClient.getLength())));
         } catch (IOException e) {
             if(e instanceof  SocketTimeoutException){
                 throw new SocketTimeoutException();
