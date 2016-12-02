@@ -129,7 +129,7 @@ public class ErrorPacket extends TFTPPacket {
 		}
 
         if(bb.hasRemaining()){
-            throw new MalformedPacketException("There are trailing bytes in the Error Packet");
+            throw new PacketOverflowException("There are trailing bytes in the Error Packet");
         } else {
             createPacket(errorCode, msg);
         }
