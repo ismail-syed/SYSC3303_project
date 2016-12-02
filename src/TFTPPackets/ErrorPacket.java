@@ -127,7 +127,12 @@ public class ErrorPacket extends TFTPPacket {
 		if (Byte.compare(bb.get(), (byte) 0) != 0) {
 			throw new MalformedPacketException("Packet does not end with a 0 byte");
 		}
-		createPacket(errorCode, msg);
+
+        if(bb.hasRemaining()){
+            throw new MalformedPacketException("There are trailing bytes in the Error Packet");
+        } else {
+            createPacket(errorCode, msg);
+        }
 	}
 
 	private void createPacket(ErrorCode type, String msg) {
