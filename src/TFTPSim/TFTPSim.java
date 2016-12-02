@@ -213,9 +213,12 @@ public class TFTPSim {
 		try {
 			// Construct a datagram socket and bind it to port 23
 			receiveSocket = new DatagramSocket(23);
-
+			
 			// Construct a datagram socket and bind it to any available
 			sendReceiveSocket = new DatagramSocket();
+			
+			// socket that is used to handle server side communication
+			sendSocket = new DatagramSocket();
 		} catch (SocketException se) {
 			se.printStackTrace();
 			System.exit(1);
@@ -375,14 +378,6 @@ public class TFTPSim {
 		// Update the server port since to where the receivePacket came from
 		serverPort = receivePacket.getPort();
 
-		// Send packet to client via a new socket
-		try {
-			sendSocket = new DatagramSocket();
-		} catch (SocketException se) {
-			se.printStackTrace();
-			System.exit(1);
-		}
-
 		// Check if we should be producing any error
 		// LOST PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.LOST_PACKET, receivePacket)) {
@@ -413,13 +408,13 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
-			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+			simulateDelayedPacket(sendReceiveSocket, receivePacket, clientPort);
 		}
 
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
 			// simulate the delay, create the packet, send the packet
-			simulateDelayedPacket(sendSocket, sendPacket, clientPort);
+			simulateDelayedPacket(sendSocket, receivePacket, clientPort);
 		} else {
 			// check if its the last data block from client on RRQ
 			if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.DATA && receivePacket.getLength() < 516) {
@@ -485,9 +480,8 @@ public class TFTPSim {
 		System.out.println("Simulator: Packet received");
 		System.out.println("From host: " + packet.getAddress());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Containing: ");
-		System.out
-				.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+		System.out.println("Byte Array: " 
+				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
 	/**
@@ -502,7 +496,7 @@ public class TFTPSim {
 		System.out.println("To host: " + packet.getAddress());
 		System.out.println("Destination host port: " + packet.getPort());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Containing Byte Array: "
+		System.out.println("Byte Array: "
 				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
