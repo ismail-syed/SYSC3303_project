@@ -423,12 +423,9 @@ public class TFTPClient {
 			} else {
 				if (verbose)
 					System.out.println("Resending last DATA/RQ packet");
-				if (lastDataPacketSent != null) {
-						sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
-				}
-				else {
-					sendPacketToServer(lastRequest, receivePacket.getAddress(), receivePacket.getPort());
-				}
+
+				sendPacketToServer(lastDataPacketSent, receivePacket.getAddress(), receivePacket.getPort());
+
 				counter++;
 				if (counter == 10) {
 					System.out.println("Server took way too long to respond, ending transfer");
