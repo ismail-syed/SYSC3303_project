@@ -207,6 +207,9 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (MalformedPacketException e){
                 verboseLog("Invalid WRQ packet");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+            } catch (BufferUnderflowException e){
+                verboseLog("Packet missing delimiting 0's");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             }
         } else {
             verboseLog("Dropping duplicate WRQ packet");
