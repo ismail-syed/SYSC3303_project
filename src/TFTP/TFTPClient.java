@@ -135,7 +135,6 @@ public class TFTPClient {
 				} catch (IOException e) {
 					System.out.println("File doesnt Exist on Client");
 					firstTime = true;
-					tftpWriter.closeHandle();
 				}
 			} else if (cmd.equals("cd")) {
 				System.out.println("Enter path to file:");
