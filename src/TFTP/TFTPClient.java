@@ -11,6 +11,7 @@ import TFTPPackets.TFTPPacket.Opcode;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.file.AccessDeniedException;
 import java.util.Arrays;
 import java.util.Scanner;
 import static TFTPPackets.TFTPPacket.MAX_SIZE;
@@ -304,7 +305,13 @@ public class TFTPClient {
 								tftpWriter.closeHandle();
 								firstTime = true;
 							}
-						} catch (IOException e) {
+						}catch (AccessDeniedException e) {
+			                System.out.println("Access Violation");
+			                sendPacketToServer(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"), receivePacket.getPort());
+			                tftpWriter.closeHandle();
+			                firstTime = true;
+			                return;
+			            } catch (IOException e) {
 							String errorMessage = e.getMessage();
 							switch (errorMessage) {
 							case "Permission denied":
