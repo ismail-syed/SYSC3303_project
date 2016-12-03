@@ -304,30 +304,32 @@ public class TFTPClient {
 											"Corrupt Block number on Data Packet " + dataPacket.getBlockNumber());
 								tftpWriter.closeHandle();
 								firstTime = true;
+								return;
 							}
-						}catch (AccessDeniedException e) {
-			                System.out.println("Access Violation");
-			                sendPacketToServer(new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"), receivePacket.getPort());
-			                tftpWriter.closeHandle();
-			                firstTime = true;
-			                return;
-			            } catch (IOException e) {
+						} catch (AccessDeniedException e) {
+							System.out.println("Access Violation");
+							sendPacketToServer(
+									new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"),
+									receivePacket.getPort());
+							tftpWriter.closeHandle();
+							firstTime = true;
+							return;
+						} catch (IOException e) {
 							e.printStackTrace();
 							System.exit(1);
 						}
 					}
-						// update previous block number
-						// create an ACK packet from corresponding block number
-						if (!firstTime) {
-							tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
-							sendPacketToServer(tftpPacket, receivePacket.getPort());
-						}
-						if (dataPacket.getData().length < 512) {
-							System.out.println("\nComplete file has been received\n");
-							lastAckSent = true;
-							firstTime = true;
-							tftpWriter.closeHandle();
-						}
+					// update previous block number
+					// create an ACK packet from corresponding block number
+					if (!firstTime) {
+						tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
+						sendPacketToServer(tftpPacket, receivePacket.getPort());
+					}
+					if (dataPacket.getData().length < 512) {
+						System.out.println("\nComplete file has been received\n");
+						lastAckSent = true;
+						firstTime = true;
+						tftpWriter.closeHandle();
 					} else {
 						System.out.println("\nERROR: Disk full or allocation exceeded\n");
 						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
@@ -434,56 +436,53 @@ public class TFTPClient {
 				firstTime = true;
 			}
 
-		}catch(
+		} catch (
 
-	SocketTimeoutException e)
-	{
-		if (verbose && !lastAckSent)
-			System.out.println("\nServer took too long to respond!");
-		if (lastAckSent) {
-			lastAckSent = false;
-			System.out.println("\nTransfer succeeded!");
-			return;
-		}
-		if (lastDataPacketSent == null) {
-			// this case should never happen
-			if (lastRequest != null) {
-				if (verbose)
-					System.out.println("Resending last RQ packet");
-				sendPacketToServer(lastRequest, sendPort);
+		SocketTimeoutException e) {
+			if (verbose && !lastAckSent)
+				System.out.println("\nServer took too long to respond!");
+			if (lastAckSent) {
+				lastAckSent = false;
+				System.out.println("\nTransfer succeeded!");
+				return;
+			}
+			if (lastDataPacketSent == null) {
+				// this case should never happen
+				if (lastRequest != null) {
+					if (verbose)
+						System.out.println("Resending last RQ packet");
+					sendPacketToServer(lastRequest, sendPort);
+				} else {
+					if (verbose)
+						System.out.println("No previous DATA packet sent; waiting for ACK/DATA");
+				}
+				counter++;
+				if (counter == 10) {
+					System.out.println("Server took way too long to respond; ending transfer");
+					if (tftpWriter != null)
+						tftpWriter.closeHandle();
+					firstTime = true;
+					counter = 0;
+				}
 			} else {
 				if (verbose)
-					System.out.println("No previous DATA packet sent; waiting for ACK/DATA");
-			}
-			counter++;
-			if (counter == 10) {
-				System.out.println("Server took way too long to respond; ending transfer");
-				if (tftpWriter != null)
-					tftpWriter.closeHandle();
-				firstTime = true;
-				counter = 0;
-			}
-		} else {
-			if (verbose)
-				System.out.println("Resending last DATA/RQ packet");
+					System.out.println("Resending last DATA/RQ packet");
 
-			sendPacketToServer(lastDataPacketSent, receivePacket.getPort());
+				sendPacketToServer(lastDataPacketSent, receivePacket.getPort());
 
-			counter++;
-			if (counter == 10) {
-				System.out.println("Server took way too long to respond; ending transfer");
-				firstTime = true;
-				if (tftpWriter != null)
-					tftpWriter.closeHandle();
-				counter = 0;
+				counter++;
+				if (counter == 10) {
+					System.out.println("Server took way too long to respond; ending transfer");
+					firstTime = true;
+					if (tftpWriter != null)
+						tftpWriter.closeHandle();
+					counter = 0;
+				}
 			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
-	}catch(
-	Exception e)
-	{
-		e.printStackTrace();
-		System.exit(1);
-	}
 	}
 
 	/**
