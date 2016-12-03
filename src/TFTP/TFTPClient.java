@@ -132,6 +132,9 @@ public class TFTPClient {
 				done = true;
 				try {
 					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(), false);
+				}catch(AccessDeniedException e1) {
+					System.out.println("Read Only Directory, file can't be written to Client");
+					firstTime = true;
 				} catch (IOException e) {
 					System.out.println("File doesnt Exist on Client");
 					firstTime = true;
