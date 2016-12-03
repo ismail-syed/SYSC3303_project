@@ -478,8 +478,8 @@ public class TFTPClient {
 				}
 			}
 		} catch (Exception e) {
-			System.exit(0);
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 
