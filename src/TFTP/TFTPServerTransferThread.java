@@ -397,12 +397,6 @@ public class TFTPServerTransferThread implements Runnable {
         packetFromClient = new DatagramPacket(dataBuffer, dataBuffer.length);
         try {
             sendReceiveSocket.receive(packetFromClient);
-            //printing out information about the packet
-            verboseLog("\nServer: Received packet");
-            verboseLog("From host: " + packetFromClient.getAddress());
-            verboseLog("Destination host port: " + packetFromClient.getPort());
-            verboseLog("Length: " + packetFromClient.getLength());
-            verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(packetFromClient.getData(), 0, packetFromClient.getLength())));
         } catch (IOException e) {
             if(e instanceof  SocketTimeoutException){
                 throw new SocketTimeoutException();
@@ -439,7 +433,6 @@ public class TFTPServerTransferThread implements Runnable {
                 } else {
                     endTransfer();
                 }
-
             }
         }
     }
