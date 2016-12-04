@@ -17,6 +17,8 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static TFTPPackets.TFTPPacket.MAX_SIZE;
 
@@ -50,6 +52,7 @@ public class TFTPServerTransferThread implements Runnable {
     private TFTPWriter tftpWriter;
     private final byte dataBuffer[] = new byte[MAX_SIZE];
     private final InetSocketAddress clientInetSocketAddress;
+    private final static Lock lock = new ReentrantLock();
 
     public TFTPServerTransferThread(DatagramPacket packetFromClient, String filePath, boolean verbose) {
         this.packetFromClient = packetFromClient;
@@ -78,11 +81,7 @@ public class TFTPServerTransferThread implements Runnable {
                     packetFromClient.getAddress(), packetFromClient.getPort());
 
             //printing out information about the packet
-            verboseLog("\nServer: Sending packet");
-            verboseLog("To host: " + sendPacket.getAddress());
-            verboseLog("Destination host port: " + sendPacket.getPort());
-            verboseLog("Length: " + sendPacket.getLength());
-            verboseLog("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
+            printPacketInfo(sendPacket, true);
             try {
                 sendReceiveSocket.send(sendPacket);
             } catch (IOException e) {
@@ -93,13 +92,7 @@ public class TFTPServerTransferThread implements Runnable {
                 //Create byte array of proper size
                 byte[] data = new byte[packetFromClient.getLength()];
                 System.arraycopy(packetFromClient.getData(), 0, data, 0, data.length);
-                verboseLog("\nServer: Packet received:");
-                verboseLog("From host: " + packetFromClient.getAddress());
-                verboseLog("Host port: " + packetFromClient.getPort());
-                int len = packetFromClient.getLength();
-                verboseLog("Length: " + len);
-                verboseLog("Containing: " + new String(Arrays.copyOfRange(data, 0, len)));
-                verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
+                printPacketInfo(packetFromClient, false);
                 //Get opcode
                 TFTPPacket.Opcode opcode = TFTPPacket.Opcode.asEnum((packetFromClient.getData()[1]));
                 switch (opcode) {
@@ -154,7 +147,7 @@ public class TFTPServerTransferThread implements Runnable {
             verboseLog("****************NEW TRANSFER****************\n");
             verboseLog("Opcode: READ");
             try {
-            	sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
+                sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
                 //Parse RRQ packet
                 rrqPacket = new RRQPacket(packetData);
                 //Read from File
@@ -190,7 +183,7 @@ public class TFTPServerTransferThread implements Runnable {
             verboseLog("****************NEW TRANSFER****************\n");
             verboseLog("Opcode: WRITE");
             try {
-            	sendReceiveSocket.setSoTimeout(0);
+                sendReceiveSocket.setSoTimeout(0);
                 //Parse WRQ packet
                 WRQPacket wrqPacket = new WRQPacket(packetData);
                 //Open file
@@ -327,11 +320,7 @@ public class TFTPServerTransferThread implements Runnable {
             DatagramPacket sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length,
                     clientInetSocketAddress.getAddress(), clientInetSocketAddress.getPort());
             //printing out information about the packet
-            verboseLog("\nServer: Sending packet");
-            verboseLog("To host: " + sendPacket.getAddress());
-            verboseLog("Destination host port: " + sendPacket.getPort());
-            verboseLog("Length: " + sendPacket.getLength());
-            verboseLog("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
+            printPacketInfo(sendPacket, true);
             try {
                 sendReceiveSocket.send(sendPacket);
             } catch (IOException e) {
@@ -350,7 +339,8 @@ public class TFTPServerTransferThread implements Runnable {
     }
 
     private void endTransfer() {
-        verboseLog("\nEnding transfer");
+        verboseLog("\n");
+        verboseLog("Ending transfer");
         allowTransfers = false;
         try {
             if (tftpWriter != null) {
@@ -389,8 +379,37 @@ public class TFTPServerTransferThread implements Runnable {
 
     private void verboseLog(String logMessage) {
         if (verbose) {
-            System.out.println(logMessage);
+            if(logMessage.equals("\n")){
+                System.out.println(logMessage);
+            } else {
+                System.out.println(Thread.currentThread().getId() + ": " + logMessage);
+            }
         }
+    }
+
+    private void printPacketInfo(DatagramPacket datagramPacket, Boolean sendingToClient){
+        lock.lock();
+        if(sendingToClient){
+            //printing out information about the packet
+            verboseLog("\n");
+            verboseLog("Server: Sending packet");
+            verboseLog("To host: " + datagramPacket.getAddress());
+            verboseLog("Destination host port: " + datagramPacket.getPort());
+            verboseLog("Length: " + datagramPacket.getLength());
+            verboseLog("Byte Array: " + TFTPPacket.toString(datagramPacket.getData()));
+        } else {
+            byte[] data = new byte[datagramPacket.getLength()];
+            System.arraycopy(datagramPacket.getData(), 0, data, 0, data.length);
+            verboseLog("\n");
+            verboseLog("Server: Packet received:");
+            verboseLog("From host: " + datagramPacket.getAddress());
+            verboseLog("Host port: " + datagramPacket.getPort());
+            int len = datagramPacket.getLength();
+            verboseLog("Length: " + len);
+            verboseLog("Containing: " + new String(Arrays.copyOfRange(data, 0, len)));
+            verboseLog("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
+        }
+        lock.unlock();
     }
 
     private void receivePacketFromClient() throws SocketTimeoutException {
@@ -420,7 +439,8 @@ public class TFTPServerTransferThread implements Runnable {
                 }
             } catch (SocketTimeoutException e) {
                 if(numberOfRetries < RETRY_LIMIT){
-                    verboseLog("\nClient took too long to respond");
+                    verboseLog("\n");
+                    verboseLog("Client took too long to respond");
                     if (lastDataPacketSent == null) {
                         //This case should never happen
                         verboseLog("Null DATA packet detected");
