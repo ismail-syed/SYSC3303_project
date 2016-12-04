@@ -625,7 +625,7 @@ public class TFTPClient {
 					c.sendRequest(in);
 				}
 				// if it is the first time, create the RRQ/WRQ packet(s)
-				if (!firstTime && !lastAckSent)
+				if (!firstTime || lastAckSent)
 					c.sendReceivePacket();
 			} catch (Exception e) {
 				e.printStackTrace();
