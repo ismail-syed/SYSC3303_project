@@ -73,7 +73,6 @@ public class InvalidTIDThread implements Runnable{
             sendReceiveSocket.send(sendPacket);
             System.out.println("\nSimulator Invalid TID Thread: Sending packet...\n");
             printVerbose(sendPacket);
-            System.out.println("Destination port: " + previousPort);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -110,7 +109,6 @@ public class InvalidTIDThread implements Runnable{
         	System.out.println("\nSimulator Invalid TID Thread: Sending packet...\n");
         	clientSocket.send(sendPacket);
         	printVerbose(sendPacket);
-        	System.out.println("Destination port: " + previousPort);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -131,7 +129,6 @@ public class InvalidTIDThread implements Runnable{
         	System.out.println("\nSimulator Invalid TID Thread: Sending packet...\n");
         	sendReceiveSocket.send(sendPacket);
         	printVerbose(sendPacket);
-        	System.out.println("Destination port: " + serverPort);
         } catch (IOException e) {
             e.printStackTrace();
         }

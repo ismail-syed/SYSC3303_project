@@ -309,11 +309,10 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
+			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			if(currentOpCode == Opcode.DATA){
-				//duplicatePacket(receivePacket, serverPort);
-			}else{
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
-				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+				duplicatePacketThread(sendReceiveSocket, sendSocket,clientPort);
 			}
 			//simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
@@ -430,11 +429,10 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),clientPort);
+			sendPacketThroughSocket(sendSocket, sendPacket);
 			if(currentOpCode == Opcode.DATA){
-				//duplicatePacket(receivePacket, clientPort);
-			}else{
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),clientPort);
-				sendPacketThroughSocket(sendSocket, sendPacket);
+				duplicatePacketThread(sendSocket, sendReceiveSocket, serverPort);
 			}
 			//simulateDelayedPacket(sendReceiveSocket, receivePacket, clientPort);
 		}
@@ -560,6 +558,12 @@ public class TFTPSim {
 	private void simulateInvalidTID(DatagramPacket packet,int port) {
 		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket,port));
 		tidThread.start();
+	}
+	
+	//Used when duplicating data, to deal with the acknowledge
+	private void duplicatePacketThread(DatagramSocket receiveSocket, DatagramSocket sendSocket, int sendPort) {
+		Thread duplicateDataThread = new Thread(new DuplicateThread(receiveSocket,sendSocket,sendPort));
+		duplicateDataThread.start();
 	}
 
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port) {
