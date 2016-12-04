@@ -323,6 +323,13 @@ public class TFTPClient {
 							firstTime = true;
 							return;
 						}
+					} else {
+						System.out.println("\nERROR: Disk full or allocation exceeded\n");
+						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
+								receivePacket.getPort());
+						tftpWriter.closeHandle();
+						firstTime = true;
+						return;
 					}
 					// update previous block number
 					// create an ACK packet from corresponding block number
@@ -335,12 +342,6 @@ public class TFTPClient {
 						lastAckSent = true;
 						firstTime = true;
 						tftpWriter.closeHandle();
-					} else {
-						System.out.println("\nERROR: Disk full or allocation exceeded\n");
-						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
-								receivePacket.getPort());
-						tftpWriter.closeHandle();
-						firstTime = true;
 					}
 				} catch (PacketOverflowException e1) {
 					if (verbose)
@@ -616,7 +617,8 @@ public class TFTPClient {
 					c.sendRequest(in);
 				}
 				// if it is the first time, create the RRQ/WRQ packet(s)
-				if(!firstTime) c.sendReceivePacket();
+				if (!firstTime)
+					c.sendReceivePacket();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
