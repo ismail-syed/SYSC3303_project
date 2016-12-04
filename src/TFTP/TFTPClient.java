@@ -505,6 +505,7 @@ public class TFTPClient {
 		if (run == Mode.TEST)
 			if (invalidTID) {
 				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
+				invalidTID = false;
 			} else {
 				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip,
 						sendPort);
