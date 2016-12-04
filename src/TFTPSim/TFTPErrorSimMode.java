@@ -105,7 +105,8 @@ public class TFTPErrorSimMode {
 		return (simState != ErrorSimState.NORMAL && 
 				simState != ErrorSimState.LOST_PACKET &&
 				simState != ErrorSimState.DELAY_PACKET &&
-				simState != ErrorSimState.DUPLICATE_PACKET
+				simState != ErrorSimState.DUPLICATE_PACKET &&
+				simState != ErrorSimState.INVALID_TID
 		);
 	}
 	
@@ -124,7 +125,7 @@ public class TFTPErrorSimMode {
 		// Ensure that the simState is the state that we are comparing
 		// and ensure the packet passed in contains the opcode that we are comparing
 		if(this.simState == simStateToCheck && this.packetType == currentOpCode){
-			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE){
+			if (currentOpCode == Opcode.READ || currentOpCode == Opcode.WRITE || currentOpCode == Opcode.ERROR){
 				return true;
 			}
 			if(this.packetNumer == currentBlockNumber) {

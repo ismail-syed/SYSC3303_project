@@ -355,9 +355,11 @@ public class TFTPSim {
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 
 			// Generate ERROR 5
-			if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
-				// Implement Thread
-				simulateInvalidTID(sendPacket, serverPort);
+			if(simMode.getSimState() == ErrorSimState.INVALID_TID){
+				if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
+					// Implement Thread
+					simulateInvalidTID(receivePacket, clientPort);
+				}
 			}
 
 		}
@@ -464,9 +466,11 @@ public class TFTPSim {
 			sendPacketThroughSocket(sendSocket, sendPacket);
 
 			// Generate ERROR 5
-			if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
-				// Implement Thread
-				simulateInvalidTID(sendPacket, clientPort);
+			if(simMode.getSimState() == ErrorSimState.INVALID_TID){
+				if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
+					// Implement Thread
+					simulateInvalidTID(receivePacket,serverPort);
+				}
 			}
 
 		}
@@ -540,9 +544,9 @@ public class TFTPSim {
 		}
 	}
 
-	private void simulateInvalidTID(DatagramPacket packet, int port) {
-		// Send the duplicate packet at the specified delay time
-		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket));
+	//send packet with a different TID
+	private void simulateInvalidTID(DatagramPacket packet,int port) {
+		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket,port));
 		tidThread.start();
 	}
 
