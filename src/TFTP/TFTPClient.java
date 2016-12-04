@@ -315,8 +315,13 @@ public class TFTPClient {
 							firstTime = true;
 							return;
 						} catch (IOException e) {
-							e.printStackTrace();
-							System.exit(1);
+							System.out.println("Access Violation(2nd catch)");
+							sendPacketToServer(
+									new ErrorPacket(ErrorPacket.ErrorCode.ACCESS_VIOLATION, "Access violation"),
+									receivePacket.getPort());
+							tftpWriter.closeHandle();
+							firstTime = true;
+							return;
 						}
 					}
 					// update previous block number
