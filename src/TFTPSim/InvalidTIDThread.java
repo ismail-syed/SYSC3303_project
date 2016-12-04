@@ -17,18 +17,20 @@ public class InvalidTIDThread implements Runnable{
 	private boolean printSpecialError = false, fileNotFound = false;
 	private int previousPort, serverPort;
 	private int sleepTime;
+	private Opcode currentOpcode;
 
 
 	public InvalidTIDThread(DatagramPacket dataPacket, int previousPort) {
 		initialPacket = dataPacket;
 		this.previousPort = previousPort;
-		if(Opcode.asEnum((dataPacket.getData()[1])) == Opcode.DATA || Opcode.asEnum((dataPacket.getData()[1])) == Opcode.ACK){
+		currentOpcode = Opcode.asEnum((dataPacket.getData()[1]));
+		if(currentOpcode == Opcode.DATA || currentOpcode == Opcode.ACK){
 			printSpecialError = true;
-		}else if(Opcode.asEnum((dataPacket.getData()[1])) == Opcode.WRITE){
+		}else if(currentOpcode == Opcode.WRITE){
 			fileNotFound = true;
 		}
 		
-		if(Opcode.asEnum((dataPacket.getData()[1])) == Opcode.READ || Opcode.asEnum((dataPacket.getData()[1])) == Opcode.WRITE){
+		if(currentOpcode == Opcode.READ || currentOpcode == Opcode.WRITE){
 			sleepTime = 10;
 		}else{
 			sleepTime = 0;
@@ -49,7 +51,7 @@ public class InvalidTIDThread implements Runnable{
 		sendPacket = new DatagramPacket(initialPacket.getData(), initialPacket.getLength(), initialPacket.getAddress(),
 				initialPacket.getPort());
 		
-		if(Opcode.asEnum((initialPacket.getData()[1])) == Opcode.ERROR){
+		if(currentOpcode == Opcode.ERROR){
 			System.out.println("An Error packet will be sent to The client with an invalid TID\n"
 					+ "Receiving this means the side that sent it has already shut down\n"
 					+ "If the valid TID packet gets to the client first, it will shut down,\n"

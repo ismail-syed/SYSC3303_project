@@ -203,7 +203,7 @@ public class TFTPSim {
 			}
 
 			// Get delay length
-			if (errorSimMode == ErrorSimState.DELAY_PACKET || errorSimMode == ErrorSimState.DUPLICATE_PACKET) {
+			if (errorSimMode == ErrorSimState.DELAY_PACKET) {
 				delayLengthForErrorSim = promptForDelayLength();
 			}
 		}
@@ -309,7 +309,13 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
-			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+			if(currentOpCode == Opcode.DATA){
+				//duplicatePacket(receivePacket, serverPort);
+			}else{
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
+				sendPacketThroughSocket(sendReceiveSocket, sendPacket);
+			}
+			//simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
 		}
 
 		// DELAY PACKET
@@ -393,6 +399,7 @@ public class TFTPSim {
 
 		// Update the server port since to where the receivePacket came from
 		serverPort = receivePacket.getPort();
+		Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 
 		// Check if we should be producing any error
 		// LOST PACKET
@@ -401,7 +408,6 @@ public class TFTPSim {
 			System.out.print("LOST PACKET: ");
 			printErrorMessage(simMode, receivePacket);
 
-			Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 			if (currentOpCode == Opcode.DATA) {
 				data = new byte[516];
 				receivePacket = new DatagramPacket(data, data.length);
@@ -424,7 +430,13 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
-			simulateDelayedPacket(sendReceiveSocket, receivePacket, clientPort);
+			if(currentOpCode == Opcode.DATA){
+				//duplicatePacket(receivePacket, clientPort);
+			}else{
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),clientPort);
+				sendPacketThroughSocket(sendSocket, sendPacket);
+			}
+			//simulateDelayedPacket(sendReceiveSocket, receivePacket, clientPort);
 		}
 
 		// DELAY PACKET
