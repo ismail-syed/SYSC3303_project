@@ -39,6 +39,7 @@ public class TFTPClient {
 	private InetSocketAddress serverInetSocketAddress;
 	private static boolean lastAckSent;
 	private static InetAddress ip;
+	private boolean invalidTID = false;
 
 	public static enum Mode {
 		NORMAL, TEST
@@ -229,6 +230,7 @@ public class TFTPClient {
 					Opcode opcode = Opcode.asEnum((int) data[1]);
 					DataPacket dataPacket;
 					ACKPacket ackPacket;
+					invalidTID = true;
 					if (opcode == Opcode.DATA)
 						try {
 							dataPacket = new DataPacket(data);
@@ -501,7 +503,12 @@ public class TFTPClient {
 	public void sendPacketToServer(TFTPPacket tftpPacket, int port) {
 		// send packet to client
 		if (run == Mode.TEST)
-			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, sendPort);
+			if (invalidTID) {
+				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
+			} else {
+				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip,
+						sendPort);
+			}
 		else
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
 		// print info on the packet
