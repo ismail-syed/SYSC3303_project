@@ -341,6 +341,7 @@ public class TFTPClient {
 						System.out.println("\nComplete file has been received\n");
 						lastAckSent = true;
 						firstTime = true;
+						sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
 						tftpWriter.closeHandle();
 					}
 				} catch (PacketOverflowException e1) {
