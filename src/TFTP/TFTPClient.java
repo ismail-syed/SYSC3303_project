@@ -132,12 +132,10 @@ public class TFTPClient {
 				done = true;
 				try {
 					tftpWriter = new TFTPWriter(new File(filePath + filename).getPath(), false);
-				}catch(AccessDeniedException e1) {
-					System.out.println("Read Only Directory, file can't be written to Client");
-					firstTime = true;
 				} catch (IOException e) {
-					System.out.println("File doesnt Exist on Client");
+					System.out.println("File can't be written to Client");
 					firstTime = true;
+					return;
 				}
 			} else if (cmd.equals("cd")) {
 				System.out.println("Enter path to file:");
@@ -204,7 +202,7 @@ public class TFTPClient {
 		sendPacketToServer(tftpPacket, sendPort);
 		System.out.println("Client: Packet sent.");
 		firstReceive = true;
-
+		firstTime = false;
 	}
 
 	/**
@@ -438,9 +436,7 @@ public class TFTPClient {
 				firstTime = true;
 			}
 
-		} catch (
-
-		SocketTimeoutException e) {
+		} catch (SocketTimeoutException e) {
 			if (verbose && !lastAckSent)
 				System.out.println("\nServer took too long to respond!");
 			if (lastAckSent) {
@@ -613,10 +609,9 @@ public class TFTPClient {
 				if (firstTime && !lastAckSent) {
 					lastDataPacketSent = null;
 					c.sendRequest(in);
-					firstTime = false;
 				}
 				// if it is the first time, create the RRQ/WRQ packet(s)
-				c.sendReceivePacket();
+				if(!firstTime) c.sendReceivePacket();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
