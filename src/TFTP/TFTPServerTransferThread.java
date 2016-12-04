@@ -72,7 +72,22 @@ public class TFTPServerTransferThread implements Runnable {
             verboseLog("Expected TID: " + clientInetSocketAddress);
             verboseLog("Received TID: " + packetFromClient.getSocketAddress());
             verboseLog("Received unknown TID, replying with unknown TID packet (ERROR CODE 5)");
-            sendPacketToClient(new ErrorPacket(ErrorCode.UNKNOWN_TID, "Unknown TID"));
+            ErrorPacket invalidTIDErrorPacket = new ErrorPacket(ErrorCode.UNKNOWN_TID, "Unknown TID");
+            //Send packet to the other client
+            DatagramPacket sendPacket = new DatagramPacket(invalidTIDErrorPacket.getByteArray(), invalidTIDErrorPacket.getByteArray().length,
+                    packetFromClient.getAddress(), packetFromClient.getPort());
+
+            //printing out information about the packet
+            verboseLog("\nServer: Sending packet");
+            verboseLog("To host: " + sendPacket.getAddress());
+            verboseLog("Destination host port: " + sendPacket.getPort());
+            verboseLog("Length: " + sendPacket.getLength());
+            verboseLog("Byte Array: " + TFTPPacket.toString(sendPacket.getData()));
+            try {
+                sendReceiveSocket.send(sendPacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } else {
             try {
                 //Create byte array of proper size
