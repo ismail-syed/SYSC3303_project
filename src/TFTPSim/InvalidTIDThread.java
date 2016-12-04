@@ -28,7 +28,7 @@ public class InvalidTIDThread implements Runnable{
 			fileNotFound = true;
 		}
 		
-		if(Opcode.asEnum((dataPacket.getData()[1])) == Opcode.READ){
+		if(Opcode.asEnum((dataPacket.getData()[1])) == Opcode.READ || Opcode.asEnum((dataPacket.getData()[1])) == Opcode.WRITE){
 			sleepTime = 10;
 		}else{
 			sleepTime = 0;
@@ -91,8 +91,8 @@ public class InvalidTIDThread implements Runnable{
 		}
 		
 		if(fileNotFound){
-			System.out.println("\nThe File already Exists There for the Server Thread has already shut down\n"
-					+ "Which will be sent to Client 2 or Server 2, which will terminate");
+			System.out.println("\nThe File already Exists Therefore the Server Thread has already shut down\n"
+					+ "The error packet will be sent to Client 2 or Server 2, which will terminate");
 			closeThread();
 			return;
 		}
@@ -124,7 +124,7 @@ public class InvalidTIDThread implements Runnable{
 			System.exit(1);
 		}
         
-		sendPacket = new DatagramPacket(data, data.length,receivePacket.getAddress(), serverPort);
+		sendPacket = new DatagramPacket(data, receivePacket.getLength(),receivePacket.getAddress(), serverPort);
         try {
         	System.out.println("\nSimulator Invalid TID Thread: Sending packet...\n");
         	sendReceiveSocket.send(sendPacket);
