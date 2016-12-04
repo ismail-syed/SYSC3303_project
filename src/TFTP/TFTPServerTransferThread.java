@@ -307,6 +307,9 @@ public class TFTPServerTransferThread implements Runnable {
             } catch (PacketOverflowException | InvalidBlockNumberException e) {
                 verboseLog("Invalid ACK packet");
                 sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid ACK packet"));
+            } catch (BufferUnderflowException e){
+                verboseLog("Packet missing delimiting 0's");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Packet missing delimiting 0's"));
             }
         } else {
             verboseLog("Received ACK packet without receiving a WRQ packet first");
