@@ -307,6 +307,9 @@ public class TFTPClient {
 								tftpWriter.closeHandle();
 								firstTime = true;
 								return;
+							} else {
+								if (verbose)
+									System.out.println("Dropping Duped DATA packet");
 							}
 						} catch (AccessDeniedException e) {
 							System.out.println("Access Violation");
