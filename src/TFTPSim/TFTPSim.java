@@ -35,7 +35,7 @@ public class TFTPSim {
 	// the one we've received to ensure they are different.
 	// This is important for the delay error sim mode
 	private byte[] delayedPacketByteData = new byte[516];
-	
+
 	// Used for managing Delay on ACK Packets
 	// We don't want to re-receive the same packet as before
 	// so we compare with the last Data byte array received
@@ -277,8 +277,15 @@ public class TFTPSim {
 		// Important for delay error sim mode
 		do {
 			waitTillPacketReceived(receiveSocket, receivePacket);
-		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket)) ||
-				Arrays.equals(lastDataReceivedFromClient, getDataArray(data, receivePacket)));
+
+			// Reset if we get a new request
+			if (initialRequest(receivePacket)) {
+				delayedPacketByteData = new byte[516];
+				lastDataReceivedFromClient = new byte[516];
+			}
+
+		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket))
+				|| Arrays.equals(lastDataReceivedFromClient, getDataArray(data, receivePacket)));
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
@@ -318,9 +325,9 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: \n");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-			if(currentOpCode == Opcode.DATA){
+			if (currentOpCode == Opcode.DATA) {
 				duplicateData = true;
 			}
 		}
@@ -347,7 +354,9 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					if(currentOpCode == Opcode.ERROR){startNewTransfer = false;}
+					if (currentOpCode == Opcode.ERROR) {
+						startNewTransfer = false;
+					}
 					System.out.println(
 							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 					data = PacketCorrupter.corruptPacket(
@@ -366,18 +375,18 @@ public class TFTPSim {
 
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			lastDataReceivedFromClient = sendPacket.getData();
-			
-			if(duplicateDataResponse != null && currentOpCode == Opcode.ACK){
-				if(Arrays.equals(duplicateDataResponse, receivePacket.getData())){
+
+			if (duplicateDataResponse != null && currentOpCode == Opcode.ACK) {
+				if (Arrays.equals(duplicateDataResponse, receivePacket.getData())) {
 					duplicateDataResponse = null;
 					listenOnClient = true;
 					return;
 				}
 			}
-			
-			if(duplicateData && currentOpCode == Opcode.ACK){
-					duplicateDataResponse = receivePacket.getData();
-					duplicateData = false;
+
+			if (duplicateData && currentOpCode == Opcode.ACK) {
+				duplicateDataResponse = receivePacket.getData();
+				duplicateData = false;
 			}
 
 			// Generate ERROR 5
@@ -417,8 +426,8 @@ public class TFTPSim {
 		// Important for delay error sim mode
 		do {
 			waitTillPacketReceived(sendReceiveSocket, receivePacket);
-		} while(Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket)) || 
-				Arrays.equals(lastDataReceivedFromServer, getDataArray(data, receivePacket)));
+		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket))
+				|| Arrays.equals(lastDataReceivedFromServer, getDataArray(data, receivePacket)));
 
 		// Update the server port since to where the receivePacket came from
 		serverPort = receivePacket.getPort();
@@ -453,9 +462,9 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: \n");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),clientPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			sendPacketThroughSocket(sendSocket, sendPacket);
-			if(currentOpCode == Opcode.DATA){
+			if (currentOpCode == Opcode.DATA) {
 				duplicateData = true;
 			}
 		}
@@ -501,23 +510,26 @@ public class TFTPSim {
 			// send the packet
 			sendPacketThroughSocket(sendSocket, sendPacket);
 			lastDataReceivedFromServer = receivePacket.getData();
-			
-			if(duplicateDataResponse != null && currentOpCode == Opcode.ACK){
-				if(Arrays.equals(duplicateDataResponse, receivePacket.getData())){
+
+			if (duplicateDataResponse != null && currentOpCode == Opcode.ACK) {
+				if (Arrays.equals(duplicateDataResponse, receivePacket.getData())) {
 					duplicateDataResponse = null;
-					if(!endOfWRQ){
+					if (!endOfWRQ) {
 						listenOnClient = false;
 						return;
 					}
 				}
 			}
-			
-			if(duplicateData && currentOpCode == Opcode.ACK){
+
+			if (duplicateData && currentOpCode == Opcode.ACK) {
 				duplicateDataResponse = receivePacket.getData();
 				duplicateData = false;
-				if(endOfWRQ){listenOnClient = false; return;}
+				if (endOfWRQ) {
+					listenOnClient = false;
+					return;
+				}
 			}
-			
+
 			// Generate ERROR 5
 			if (simMode.getSimState() == ErrorSimState.INVALID_TID) {
 				if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
@@ -867,5 +879,10 @@ public class TFTPSim {
 	// Helper method to get the data packet array from a packet
 	private byte[] getDataArray(byte[] inputData, DatagramPacket packet) {
 		return Arrays.copyOfRange(inputData, 0, packet.getLength());
+	}
+
+	private boolean initialRequest(DatagramPacket packet) {
+		Opcode currentOpcode = Opcode.asEnum((packet.getData()[1]));
+		return (currentOpcode == Opcode.READ || currentOpcode == Opcode.WRITE) ? true : false;
 	}
 }
