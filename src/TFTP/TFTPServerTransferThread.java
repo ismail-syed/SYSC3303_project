@@ -458,5 +458,6 @@ public class TFTPServerTransferThread implements Runnable {
                 }
             }
         }
+        TFTPServer.serverInstance.removeFromTransferPortList(Thread.currentThread().getId(), clientInetSocketAddress.getPort());
     }
 }
