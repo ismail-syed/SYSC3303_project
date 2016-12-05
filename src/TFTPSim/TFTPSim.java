@@ -379,14 +379,17 @@ public class TFTPSim {
 			if (duplicateDataResponse != null && currentOpCode == Opcode.ACK) {
 				if (Arrays.equals(duplicateDataResponse, receivePacket.getData())) {
 					duplicateDataResponse = null;
-					listenOnClient = true;
-					return;
+					if(!startNewTransfer){
+						listenOnClient = true;
+						return;
+					}
 				}
 			}
 
 			if (duplicateData && currentOpCode == Opcode.ACK) {
 				duplicateDataResponse = receivePacket.getData();
 				duplicateData = false;
+				if(startNewTransfer){listenOnClient = true; return;}
 			}
 
 			// Generate ERROR 5
@@ -548,6 +551,7 @@ public class TFTPSim {
 			endOfWRQ = false;
 			simMode.setSimState(errorSimMode);
 			duplicateData = false;
+			duplicateDataResponse = null;
 		}
 	}
 
