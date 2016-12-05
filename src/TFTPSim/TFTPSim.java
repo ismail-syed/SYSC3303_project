@@ -5,6 +5,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Scanner;
 
@@ -53,7 +54,7 @@ public class TFTPSim {
 	private byte[] duplicateDataResponse = null;
 	
 	private InetAddress ClientIP;
-	private InetAddress LocalIP;
+	private static InetAddress LocalIP;
 
 	private static Scanner sc;
 
@@ -62,8 +63,10 @@ public class TFTPSim {
 
 	/**
 	 * @param args
+	 * @throws UnknownHostException 
 	 */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException {
+		LocalIP = InetAddress.getLocalHost();
 		sc = new Scanner(System.in);
 		int rootMenuInput;
 		packetTypeForErrorSim = null;
