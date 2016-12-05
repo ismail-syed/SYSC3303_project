@@ -604,12 +604,6 @@ public class TFTPSim {
 		tidThread.start();
 	}
 
-	/*//Used when duplicating data, to deal with the acknowledge
-	private void duplicatePacketThread(DatagramSocket receiveSocket, DatagramSocket sendSocket, int sendPort) {
-		Thread duplicateDataThread = new Thread(new DuplicateThread(receiveSocket, sendSocket, sendPort));
-		duplicateDataThread.start();
-	}*/
-
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port) {
 		System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
 
