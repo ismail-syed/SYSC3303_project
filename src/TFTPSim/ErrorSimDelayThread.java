@@ -10,7 +10,7 @@ import TFTPPackets.TFTPPacket;
 public class ErrorSimDelayThread implements Runnable{
 	
 	private DatagramSocket sendSocket;
-	private DatagramPacket sendPacket, receivePacket;
+	private DatagramPacket sendPacket;
 	private int delayLength, sendPort;	
 
 	/**
@@ -20,9 +20,9 @@ public class ErrorSimDelayThread implements Runnable{
 	 * @param data
 	 * @param errS
 	 */
-	public ErrorSimDelayThread(DatagramSocket sendSocket, DatagramPacket receivePacket, int port, int delay) {
+	public ErrorSimDelayThread(DatagramSocket sendSocket, DatagramPacket sendPacket, int port, int delay) {
 		this.sendSocket = sendSocket; 
-		this.receivePacket = receivePacket;
+		this.sendPacket = sendPacket;
 		this.delayLength = delay;
 		this.sendPort = port;
 	}
@@ -31,9 +31,8 @@ public class ErrorSimDelayThread implements Runnable{
 	public void run() {
 		try{
 			Thread.sleep(delayLength);
-			sendPacket = new DatagramPacket(receivePacket.getData(), receivePacket.getLength(), receivePacket.getAddress(), this.sendPort);
 			sendSocket.send(sendPacket);
-			printSendPacketInfo(sendPacket, receivePacket.getData());
+			printSendPacketInfo(sendPacket, sendPacket.getData());
 		} catch(InterruptedException e){
 			System.out.println("Error occured while trying to delay packet.");
 		} catch (IOException e) {
@@ -41,7 +40,7 @@ public class ErrorSimDelayThread implements Runnable{
 			e.printStackTrace();
 		}	
 		
-		System.out.println("DELAYED PACKET SENT: After waiting " + delayLength + "ms");
+		System.out.print("DELAYED PACKET SENT: After waiting " + delayLength + "ms\n");
 	}
 
 	private void printSendPacketInfo(DatagramPacket packet, byte[] data) {

@@ -38,12 +38,6 @@ public class TFTPSim {
 	// This is important for the delay error sim mode
 	private byte[] delayedPacketByteData = new byte[516];
 
-	// Used for managing Delay on ACK Packets
-	// We don't want to re-receive the same packet as before
-	// so we compare with the last Data byte array received
-	private byte[] lastDataReceivedFromServer = new byte[516];
-	private byte[] lastDataReceivedFromClient = new byte[516];
-
 	// Ports
 	private int serverPort = 69;
 	private int clientPort;
@@ -52,7 +46,7 @@ public class TFTPSim {
 	private boolean endOfWRQ;
 	private boolean duplicateData = false;
 	private byte[] duplicateDataResponse = null;
-	
+
 	private InetAddress ClientIP;
 	private static InetAddress LocalIP;
 
@@ -278,21 +272,8 @@ public class TFTPSim {
 		System.out.println("\nSimulator: Waiting for packet from client...\n");
 		data = new byte[516];
 		receivePacket = new DatagramPacket(data, data.length);
-
-		// Keep listening until we know that the current packet received is not
-		// the same as delayed packet from before
-		// Important for delay error sim mode
-		do {
-			waitTillPacketReceived(receiveSocket, receivePacket);
-
-			// Reset if we get a new request
-			if (initialRequest(receivePacket)) {
-				delayedPacketByteData = new byte[516];
-				lastDataReceivedFromClient = new byte[516];
-			}
-
-		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket))
-				|| Arrays.equals(lastDataReceivedFromClient, getDataArray(data, receivePacket)));
+		
+		waitTillPacketReceived(receiveSocket, receivePacket);
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
@@ -342,9 +323,11 @@ public class TFTPSim {
 
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
-			// simulate the delay, create the packet, send the packet
-			simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
-			delayedPacketByteData = getDataArray(data, receivePacket);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, serverPort);
+			simulateDelayedPacket(sendReceiveSocket, sendPacket, serverPort);
+			waitTillPacketReceived(receiveSocket, receivePacket);
+			clientPort = receivePacket.getPort();
+			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 		} else {
 			// Send packet to the server
 			// check if its the last data on a WRQ
@@ -373,21 +356,19 @@ public class TFTPSim {
 					sendPacket = new DatagramPacket(data, data.length, LocalIP, serverPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
-					sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP,
-							serverPort);
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, serverPort);
 				}
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP,
-						serverPort);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, serverPort);
 			}
 
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-			lastDataReceivedFromClient = sendPacket.getData();
+			// lastDataReceivedFromClient = sendPacket.getData();
 
 			if (duplicateDataResponse != null && currentOpCode == Opcode.ACK) {
 				if (Arrays.equals(duplicateDataResponse, receivePacket.getData())) {
 					duplicateDataResponse = null;
-					if(!startNewTransfer){
+					if (!startNewTransfer) {
 						listenOnClient = true;
 						return;
 					}
@@ -397,7 +378,10 @@ public class TFTPSim {
 			if (duplicateData && currentOpCode == Opcode.ACK) {
 				duplicateDataResponse = receivePacket.getData();
 				duplicateData = false;
-				if(startNewTransfer){listenOnClient = true; return;}
+				if (startNewTransfer) {
+					listenOnClient = true;
+					return;
+				}
 			}
 
 			// Generate ERROR 5
@@ -432,13 +416,7 @@ public class TFTPSim {
 		data = new byte[516];
 		receivePacket = new DatagramPacket(data, data.length);
 
-		// Keep listening until we know that the current packet received is not
-		// the same as the delayed packets
-		// Important for delay error sim mode
-		do {
-			waitTillPacketReceived(sendReceiveSocket, receivePacket);
-		} while (Arrays.equals(delayedPacketByteData, getDataArray(data, receivePacket))
-				|| Arrays.equals(lastDataReceivedFromServer, getDataArray(data, receivePacket)));
+		waitTillPacketReceived(sendReceiveSocket, receivePacket);
 
 		// Update the server port since to where the receivePacket came from
 		serverPort = receivePacket.getPort();
@@ -482,10 +460,11 @@ public class TFTPSim {
 
 		// DELAY PACKET
 		if (simMode.checkPacketToCreateError(ErrorSimState.DELAY_PACKET, receivePacket)) {
-			// simulate the delay, create the packet, send the packet
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, clientPort);
 			simulateDelayedPacket(sendSocket, receivePacket, clientPort);
-			delayedPacketByteData = getDataArray(data, receivePacket);
-			System.out.println("delayedPacketByteData: " + Arrays.toString(delayedPacketByteData));
+			waitTillPacketReceived(sendReceiveSocket, receivePacket);
+			serverPort = receivePacket.getPort();
+			sendPacketThroughSocket(sendSocket, sendPacket);
 		} else {
 			// check if its the last data block from client on RRQ
 			if (currentOpCode == Opcode.DATA && receivePacket.getLength() < 516) {
@@ -510,17 +489,15 @@ public class TFTPSim {
 					sendPacket = new DatagramPacket(data, data.length, ClientIP, clientPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
-					sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP,
-							clientPort);
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP, clientPort);
 				}
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP,
-						clientPort);
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP, clientPort);
 			}
 
 			// send the packet
 			sendPacketThroughSocket(sendSocket, sendPacket);
-			lastDataReceivedFromServer = receivePacket.getData();
+			// lastDataReceivedFromServer = receivePacket.getData();
 
 			if (duplicateDataResponse != null && currentOpCode == Opcode.ACK) {
 				if (Arrays.equals(duplicateDataResponse, receivePacket.getData())) {
