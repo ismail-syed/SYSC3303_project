@@ -114,7 +114,11 @@ public class TFTPClient {
 				}
 			} else if (cmd.equals("R")) {
 				System.out.println("Client: creating RRQ packet.");
-				sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
+				if(run == Mode.NORMAL){
+					sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
+				}else{
+					sendReceiveSocket.setSoTimeout(5000);
+				}
 				// get file name
 				for (;;) {
 					System.out.println("Enter file name");
