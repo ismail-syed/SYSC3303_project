@@ -28,6 +28,7 @@ public class DuplicateThread implements Runnable {
 		
 		try {
 			receiveSocket.receive(receivePacket);
+			System.out.println("duplicate thread received something\n");
 			printVerboseReceive(receivePacket);
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -39,26 +40,25 @@ public class DuplicateThread implements Runnable {
         	System.out.println("\nDuplicate Thread: Sending packet...\n");
         	sendSocket.send(sendPacket);
         	printVerbose(sendPacket);
-        	System.out.println("Destination port: " + sendPort);
         } catch (IOException e) {
             e.printStackTrace();
         }
 	}
 	
 	synchronized private void printVerboseReceive(DatagramPacket receivePacket) {
-		System.out.println("\nTID Thread: Simulator Invalid TID Thread: Packet received");
-		System.out.println("TID Thread: From host: " + receivePacket.getAddress());
-		System.out.println("TID Thread: Length: " + receivePacket.getLength());
-		System.out.println("TID Thread: Containing: ");
-		System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength())) + "\n");
+		System.out.println("\nDuplicate Thread: Simulator Invalid TID Thread: Packet received");
+		System.out.println("Duplicate Thread: From host: " + receivePacket.getAddress());
+		System.out.println("Duplicate Thread: Length: " + receivePacket.getLength());
+		System.out.println("Duplicate Thread: Containing: ");
+		System.out.println("Duplicate Thread Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength())) + "\n");
 	}
 	
 	synchronized private void printVerbose(DatagramPacket packet){
-		System.out.println("\nTID Thread: Simulator Invalid TID Thread: Packet sent");
-		System.out.println("TID Thread: To host: " + packet.getAddress());
-		System.out.println("TID Thread: Destination host port: " + packet.getPort());
-		System.out.println("TID Thread: Length: " + packet.getLength());
-		System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getLength())) + "\n");
+		System.out.println("\nDuplicate Thread: Simulator Invalid TID Thread: Packet sent");
+		System.out.println("Duplicate Thread: To host: " + packet.getAddress());
+		System.out.println("Duplicate Thread: Destination host port: " + packet.getPort());
+		System.out.println("Duplicate Thread: Length: " + packet.getLength());
+		System.out.println("Duplicate Thread Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(packet.getData(), 0, packet.getLength())) + "\n");
 	}
 
 }
