@@ -11,6 +11,7 @@ import TFTPPackets.TFTPPacket.Opcode;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.BufferUnderflowException;
 import java.nio.file.AccessDeniedException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -113,7 +114,7 @@ public class TFTPClient {
 				}
 			} else if (cmd.equals("R")) {
 				System.out.println("Client: creating RRQ packet.");
-				sendReceiveSocket.setSoTimeout(0);// TODO
+				sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
 				// get file name
 				for (;;) {
 					System.out.println("Enter file name");
@@ -230,7 +231,18 @@ public class TFTPClient {
 					Opcode opcode = Opcode.asEnum((int) data[1]);
 					DataPacket dataPacket;
 					ACKPacket ackPacket;
-					invalidTID = true;
+					invalidTID = true; 
+					if (verbose) {
+						System.out.println("\nClient: Packet received:");
+						System.out.println("From host: " + receivePacket.getAddress());
+						System.out.println("Host port: " + receivePacket.getPort());
+						int len = receivePacket.getLength();
+						System.out.println("Length: " + len);
+						System.out.println("Containing: ");
+						System.out.println(new String(Arrays.copyOfRange(data, 0, len)));
+						System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
+					}
+					
 					if (opcode == Opcode.DATA)
 						try {
 							dataPacket = new DataPacket(data);
@@ -281,6 +293,7 @@ public class TFTPClient {
 			Opcode opcode = Opcode.asEnum((int) data[1]);
 
 			if (opcode == Opcode.DATA) {
+				sendReceiveSocket.setSoTimeout(0);
 				if (verbose) {
 					System.out.println("Opcode: DATA");
 				}
@@ -338,7 +351,7 @@ public class TFTPClient {
 					}
 					// update previous block number
 					// create an ACK packet from corresponding block number
-					if (!firstTime) {
+					if (!firstTime || lastAckSent) {
 						tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 						sendPacketToServer(tftpPacket, receivePacket.getPort());
 					}
@@ -412,6 +425,13 @@ public class TFTPClient {
 							receivePacket.getPort());
 					if (verbose)
 						System.out.println("ACK packet received in an invalid format");
+					firstTime = true;
+				} catch (BufferUnderflowException e3) {
+					sendPacketToServer(
+							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK packet received with missing block number"),
+							receivePacket.getPort());
+					if (verbose)
+						System.out.println("ACK packet received with a missing block number");
 					firstTime = true;
 				}
 			} else if (opcode == Opcode.ERROR) {
