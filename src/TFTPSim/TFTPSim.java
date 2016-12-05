@@ -309,12 +309,13 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),serverPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
-			if(currentOpCode == Opcode.DATA){
-				duplicatePacketThread(sendReceiveSocket, sendSocket,clientPort);
+			if (currentOpCode == Opcode.DATA) {
+				duplicatePacketThread(sendReceiveSocket, sendSocket, clientPort);
 			}
-			//simulateDelayedPacket(sendReceiveSocket, receivePacket, serverPort);
+			// simulateDelayedPacket(sendReceiveSocket, receivePacket,
+			// serverPort);
 		}
 
 		// DELAY PACKET
@@ -340,7 +341,9 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){startNewTransfer = false;}
+					if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR) {
+						startNewTransfer = false;
+					}
 					System.out.println(
 							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 					data = PacketCorrupter.corruptPacket(
@@ -360,7 +363,7 @@ public class TFTPSim {
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 
 			// Generate ERROR 5
-			if(simMode.getSimState() == ErrorSimState.INVALID_TID){
+			if (simMode.getSimState() == ErrorSimState.INVALID_TID) {
 				if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
 					// Implement Thread
 					simulateInvalidTID(receivePacket, clientPort);
@@ -429,12 +432,13 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: ");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),clientPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
 			sendPacketThroughSocket(sendSocket, sendPacket);
-			if(currentOpCode == Opcode.DATA){
+			if (currentOpCode == Opcode.DATA) {
 				duplicatePacketThread(sendSocket, sendReceiveSocket, serverPort);
 			}
-			//simulateDelayedPacket(sendReceiveSocket, receivePacket, clientPort);
+			// simulateDelayedPacket(sendReceiveSocket, receivePacket,
+			// clientPort);
 		}
 
 		// DELAY PACKET
@@ -456,7 +460,9 @@ public class TFTPSim {
 			// Generate ERROR 4 type packet
 			if (simMode.isInvalidPacketType()) {
 				if (isCurrentPacketValidToGenerateInvalidPacket(receivePacket)) {
-					if(Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR){endOfWRQ = false;}
+					if (Opcode.asEnum((receivePacket.getData()[1])) == Opcode.ERROR) {
+						endOfWRQ = false;
+					}
 					System.out.println(
 							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
@@ -476,10 +482,10 @@ public class TFTPSim {
 			sendPacketThroughSocket(sendSocket, sendPacket);
 
 			// Generate ERROR 5
-			if(simMode.getSimState() == ErrorSimState.INVALID_TID){
+			if (simMode.getSimState() == ErrorSimState.INVALID_TID) {
 				if (simMode.checkPacketToCreateError(ErrorSimState.INVALID_TID, receivePacket)) {
 					// Implement Thread
-					simulateInvalidTID(receivePacket,serverPort);
+					simulateInvalidTID(receivePacket, serverPort);
 				}
 			}
 
@@ -506,8 +512,8 @@ public class TFTPSim {
 		System.out.println("Simulator: Packet received");
 		System.out.println("From host: " + packet.getAddress());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: " 
-				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+		System.out
+				.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
 	/**
@@ -522,8 +528,8 @@ public class TFTPSim {
 		System.out.println("To host: " + packet.getAddress());
 		System.out.println("Destination host port: " + packet.getPort());
 		System.out.println("Length: " + packet.getLength());
-		System.out.println("Byte Array: "
-				+ TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+		System.out
+				.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
 	}
 
 	/**
@@ -554,36 +560,23 @@ public class TFTPSim {
 		}
 	}
 
-	//send packet with a different TID
-	private void simulateInvalidTID(DatagramPacket packet,int port) {
-		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket,port));
+	// send packet with a different TID
+	private void simulateInvalidTID(DatagramPacket packet, int port) {
+		Thread tidThread = new Thread(new InvalidTIDThread(sendPacket, port));
 		tidThread.start();
 	}
-	
-	//Used when duplicating data, to deal with the acknowledge
+
+	// Used when duplicating data, to deal with the acknowledge
 	private void duplicatePacketThread(DatagramSocket receiveSocket, DatagramSocket sendSocket, int sendPort) {
-		Thread duplicateDataThread = new Thread(new DuplicateThread(receiveSocket,sendSocket,sendPort));
+		Thread duplicateDataThread = new Thread(new DuplicateThread(receiveSocket, sendSocket, sendPort));
 		duplicateDataThread.start();
 	}
 
 	private void simulateDelayedPacket(DatagramSocket socket, DatagramPacket packet, int port) {
 		System.out.println("DELAYING PACKET for " + simMode.getDelayLength() + " ms... \n");
-		// Send the duplicate packet at the specified delay time
-		try {
-			Thread.sleep(simMode.getDelayLength());
-		} catch (InterruptedException e) {
-			System.out.println("Error occured while trying to delay packet.");
-		}
-		packet = new DatagramPacket(data, packet.getLength(), packet.getAddress(), port);
-		sendPacketThroughSocket(socket, packet);
-		System.out.println("DELAYED PACKET SENT: After waiting " + simMode.getDelayLength() + "ms\n");
 
-		// Commented out by Ismail
-		// This second thread is what seem to be causing
-		// the byte array of all zeros logged in Issue #33
-		// Thread delayThread = new Thread(new ErrorSimDelayThread(this, socket,
-		// sendPacket, simMode.getDelayLength()));
-		// delayThread.start();
+		Thread delayThread = new Thread(new ErrorSimDelayThread(socket, packet, port, simMode.getDelayLength()));
+		delayThread.start();
 	}
 
 	/**
