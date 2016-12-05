@@ -105,11 +105,11 @@ public class TFTPClient {
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				previousBlockNumber = 0;
-				done = true;
 				try {
 					tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+					done = true;
 				} catch (IOException | InvalidBlockNumberException e) {
-					e.printStackTrace();
+					System.out.println("ERROR: File is larger than limit.\n");
 				}
 			} else if (cmd.equals("R")) {
 				System.out.println("Client: creating RRQ packet.");
