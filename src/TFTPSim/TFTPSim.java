@@ -3,6 +3,7 @@ package TFTPSim;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -50,6 +51,9 @@ public class TFTPSim {
 	private boolean endOfWRQ;
 	private boolean duplicateData = false;
 	private byte[] duplicateDataResponse = null;
+	
+	private InetAddress ClientIP;
+	private InetAddress LocalIP;
 
 	private static Scanner sc;
 
@@ -289,6 +293,7 @@ public class TFTPSim {
 
 		// Update the clientPort since to where the receivePacket came from
 		clientPort = receivePacket.getPort();
+		ClientIP = receivePacket.getAddress();
 		Opcode currentOpCode = Opcode.asEnum((receivePacket.getData()[1]));
 
 		// Check if we should be producing any error
@@ -325,7 +330,7 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: \n");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), serverPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, serverPort);
 			sendPacketThroughSocket(sendReceiveSocket, sendPacket);
 			if (currentOpCode == Opcode.DATA) {
 				duplicateData = true;
@@ -362,14 +367,14 @@ public class TFTPSim {
 					data = PacketCorrupter.corruptPacket(
 							Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()),
 							simMode.getSimState());
-					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), serverPort);
+					sendPacket = new DatagramPacket(data, data.length, LocalIP, serverPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
-					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP,
 							serverPort);
 				}
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP,
 						serverPort);
 			}
 
@@ -465,7 +470,7 @@ public class TFTPSim {
 			// This will send a duplicate packet after the delayed time set in
 			// simMode
 			System.out.print("DUPLICATING PACKET: \n");
-			sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(), clientPort);
+			sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP, clientPort);
 			sendPacketThroughSocket(sendSocket, sendPacket);
 			if (currentOpCode == Opcode.DATA) {
 				duplicateData = true;
@@ -499,14 +504,14 @@ public class TFTPSim {
 							"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
 					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
 							simMode.getSimState());
-					sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), clientPort);
+					sendPacket = new DatagramPacket(data, data.length, ClientIP, clientPort);
 					simMode.setSimState(ErrorSimState.NORMAL);
 				} else {
-					sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
+					sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP,
 							clientPort);
 				}
 			} else {
-				sendPacket = new DatagramPacket(data, receivePacket.getLength(), receivePacket.getAddress(),
+				sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP,
 						clientPort);
 			}
 
