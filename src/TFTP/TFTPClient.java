@@ -411,7 +411,7 @@ public class TFTPClient {
 							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK packet received in an invalid format"),
 							receivePacket.getPort());
 					if (verbose)
-						System.out.println("DATA packet received in an invalid format");
+						System.out.println("ACK packet received in an invalid format");
 					firstTime = true;
 				}
 			} else if (opcode == Opcode.ERROR) {
