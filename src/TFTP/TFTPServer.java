@@ -17,7 +17,7 @@ import static TFTPPackets.TFTPPacket.MAX_SIZE;
  * @author Team 3000000
  * @author Aritra Sengupta
  * @author Shasthra Ranasinghe
- * @version 1.0
+ * @version 4.0
  */
 
 public class TFTPServer implements Runnable {
@@ -26,6 +26,8 @@ public class TFTPServer implements Runnable {
 	private static boolean verbose;
 	private static volatile boolean acceptingNewConnections;
 	private static ArrayList<Thread> transferThreadsList = new ArrayList<>();
+	private static ArrayList<Integer> transferPortsList = new ArrayList<>();
+	static TFTPServer serverInstance;
 
 	private TFTPServer() {
 		try {
@@ -38,6 +40,20 @@ public class TFTPServer implements Runnable {
 			se.printStackTrace();
 			System.exit(1);
 		}
+	}
+
+	void removeFromTransferPortList(Long threadID, int port){
+        if(verbose){
+            System.out.println(Long.toString(threadID) + ": Removed port " + port + " from transfer ports list");
+        }
+		transferPortsList.remove(new Integer(port));
+	}
+
+	private void addToTransferPortList(int port){
+        if(verbose){
+            System.out.println("\nPort " + port + " added to transfer ports list");
+        }
+		transferPortsList.add(port);
 	}
 
 	/**
@@ -53,9 +69,15 @@ public class TFTPServer implements Runnable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		Thread fileTransferThread = new Thread(new TFTPServerTransferThread(receivePacket, filePath, verbose));
-		transferThreadsList.add(fileTransferThread);
-		fileTransferThread.start();
+		if(transferPortsList.contains(receivePacket.getPort())){
+            System.out.println("Dropping packet from port " + receivePacket.getPort()
+                    + " because a transfer from this port is already in progress");
+        } else {
+            Thread fileTransferThread = new Thread(new TFTPServerTransferThread(receivePacket, filePath, verbose));
+            addToTransferPortList(receivePacket.getPort());
+            fileTransferThread.start();
+			transferThreadsList.add(fileTransferThread);
+        }
 	}
 
 	public static void main(String args[]) throws Exception {
@@ -102,7 +124,8 @@ public class TFTPServer implements Runnable {
 		}
 
 		// Start the main program
-		Thread serverSocketListeningThread = new Thread(new TFTPServer());
+		serverInstance = new TFTPServer();
+		Thread serverSocketListeningThread = new Thread(serverInstance);
 		serverSocketListeningThread.start();
 
 		for (;;) {
