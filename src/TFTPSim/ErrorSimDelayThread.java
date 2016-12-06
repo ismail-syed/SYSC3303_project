@@ -11,7 +11,7 @@ public class ErrorSimDelayThread implements Runnable{
 	
 	private DatagramSocket sendSocket;
 	private DatagramPacket sendPacket;
-	private int delayLength, sendPort;	
+	private int delayLength;	
 
 	/**
 	 * Receives the delay time from ErrorSim
@@ -20,11 +20,10 @@ public class ErrorSimDelayThread implements Runnable{
 	 * @param data
 	 * @param errS
 	 */
-	public ErrorSimDelayThread(DatagramSocket sendSocket, DatagramPacket sendPacket, int port, int delay) {
+	public ErrorSimDelayThread(DatagramSocket sendSocket, DatagramPacket sendPacket, int delay) {
 		this.sendSocket = sendSocket; 
 		this.sendPacket = sendPacket;
 		this.delayLength = delay;
-		this.sendPort = port;
 	}
 	
 	@Override
@@ -32,24 +31,25 @@ public class ErrorSimDelayThread implements Runnable{
 		try{
 			Thread.sleep(delayLength);
 			sendSocket.send(sendPacket);
-			printSendPacketInfo(sendPacket, sendPacket.getData());
+			printSendPacketInfo(sendPacket);
 		} catch(InterruptedException e){
-			System.out.println("Error occured while trying to delay packet.");
+			System.out.println("Error occured while trying to delay packet.\n");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println("Error occured while trying to send the delayed packet.\n");
 		}	
-		
-		System.out.print("DELAYED PACKET SENT: After waiting " + delayLength + "ms\n");
 	}
 
-	private void printSendPacketInfo(DatagramPacket packet, byte[] data) {
-		System.out.println("Simulator: Sent packet.");
-		System.out.println("To host: " + packet.getAddress());
-		System.out.println("Destination host port: " + packet.getPort());
-		System.out.println("Length: " + packet.getLength());
-		System.out
-				.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, packet.getLength())) + "\n");
+	private void printSendPacketInfo(DatagramPacket packet) {
+		synchronized(System.out){
+			System.out.println("**************************************************************************\n");
+			System.out.println("Delayed Thread:Sent packet.");
+			System.out.println("Delayed Thread: To host: " + packet.getAddress());
+			System.out.println("Delayed Thread: Destination host port: " + packet.getPort());
+			System.out.println("Delayed Thread: Length: " + packet.getLength());
+			System.out.println("Delayed Thread: Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(sendPacket.getData(), 0, packet.getLength())) + "\n");
+			System.out.println("DELAYED PACKET SENT: After waiting " + delayLength + "ms\n");
+			System.out.println("**************************************************************************\n");
+		}
 	}
 
 }

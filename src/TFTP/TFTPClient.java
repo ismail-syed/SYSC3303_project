@@ -117,7 +117,7 @@ public class TFTPClient {
 				if(run == Mode.NORMAL){
 					sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
 				}else{
-					sendReceiveSocket.setSoTimeout(5000);
+					sendReceiveSocket.setSoTimeout(3000);
 				}
 				// get file name
 				for (;;) {
