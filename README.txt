@@ -157,6 +157,27 @@ Mohamed Zalat
 - Client side implementation
 - Refactored client-side code
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kunall Banerjee
+- Project management and coordination
+-Bug fixes
+- Testing
+
+Ismail Syed & Shasthra Ranasinghe
+- Testing
+- Bug fixes in the error simulator
+
+
+Aritra Sengupta
+- Bug fixes on the server-side
+
+Mohamed Zalat
+- Timing diagrams
+- Bug fixes on client-side
+
 ========================================================================
 
 FILES
