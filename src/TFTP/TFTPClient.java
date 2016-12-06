@@ -11,6 +11,7 @@ import TFTPPackets.TFTPPacket.Opcode;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.BufferUnderflowException;
 import java.nio.file.AccessDeniedException;
 import java.util.Arrays;
 import java.util.Scanner;
@@ -39,6 +40,7 @@ public class TFTPClient {
 	private InetSocketAddress serverInetSocketAddress;
 	private static boolean lastAckSent;
 	private static InetAddress ip;
+	private boolean invalidTID = false;
 
 	public static enum Mode {
 		NORMAL, TEST
@@ -104,15 +106,19 @@ public class TFTPClient {
 				}
 				tftpPacket = new WRQPacket(filename, RRQWRQPacketCommon.Mode.NETASCII);
 				previousBlockNumber = 0;
-				done = true;
 				try {
 					tftpReader = new TFTPReader(new File(filePath + filename).getPath());
+					done = true;
 				} catch (IOException | InvalidBlockNumberException e) {
-					e.printStackTrace();
+					System.out.println("ERROR: File is larger than limit.\n");
 				}
 			} else if (cmd.equals("R")) {
 				System.out.println("Client: creating RRQ packet.");
-				sendReceiveSocket.setSoTimeout(0);// TODO
+				if(run == Mode.NORMAL){
+					sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);// TODO
+				}else{
+					sendReceiveSocket.setSoTimeout(3000);
+				}
 				// get file name
 				for (;;) {
 					System.out.println("Enter file name");
@@ -229,6 +235,18 @@ public class TFTPClient {
 					Opcode opcode = Opcode.asEnum((int) data[1]);
 					DataPacket dataPacket;
 					ACKPacket ackPacket;
+					invalidTID = true; 
+					if (verbose) {
+						System.out.println("\nClient: Packet received:");
+						System.out.println("From host: " + receivePacket.getAddress());
+						System.out.println("Host port: " + receivePacket.getPort());
+						int len = receivePacket.getLength();
+						System.out.println("Length: " + len);
+						System.out.println("Containing: ");
+						System.out.println(new String(Arrays.copyOfRange(data, 0, len)));
+						System.out.println("Byte Array: " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, len)) + "\n");
+					}
+					
 					if (opcode == Opcode.DATA)
 						try {
 							dataPacket = new DataPacket(data);
@@ -279,6 +297,7 @@ public class TFTPClient {
 			Opcode opcode = Opcode.asEnum((int) data[1]);
 
 			if (opcode == Opcode.DATA) {
+				sendReceiveSocket.setSoTimeout(0);
 				if (verbose) {
 					System.out.println("Opcode: DATA");
 				}
@@ -305,6 +324,9 @@ public class TFTPClient {
 								tftpWriter.closeHandle();
 								firstTime = true;
 								return;
+							} else {
+								if (verbose)
+									System.out.println("Dropping Duped DATA packet");
 							}
 						} catch (AccessDeniedException e) {
 							System.out.println("Access Violation");
@@ -323,10 +345,17 @@ public class TFTPClient {
 							firstTime = true;
 							return;
 						}
+					} else {
+						System.out.println("\nERROR: Disk full or allocation exceeded\n");
+						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
+								receivePacket.getPort());
+						tftpWriter.closeHandle();
+						firstTime = true;
+						return;
 					}
 					// update previous block number
 					// create an ACK packet from corresponding block number
-					if (!firstTime) {
+					if (!firstTime || lastAckSent) {
 						tftpPacket = new ACKPacket(dataPacket.getBlockNumber());
 						sendPacketToServer(tftpPacket, receivePacket.getPort());
 					}
@@ -334,13 +363,8 @@ public class TFTPClient {
 						System.out.println("\nComplete file has been received\n");
 						lastAckSent = true;
 						firstTime = true;
+						sendReceiveSocket.setSoTimeout(SOCKET_TIMEOUT_MS);
 						tftpWriter.closeHandle();
-					} else {
-						System.out.println("\nERROR: Disk full or allocation exceeded\n");
-						sendPacketToServer(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"),
-								receivePacket.getPort());
-						tftpWriter.closeHandle();
-						firstTime = true;
 					}
 				} catch (PacketOverflowException e1) {
 					if (verbose)
@@ -404,7 +428,14 @@ public class TFTPClient {
 							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK packet received in an invalid format"),
 							receivePacket.getPort());
 					if (verbose)
-						System.out.println("DATA packet received in an invalid format");
+						System.out.println("ACK packet received in an invalid format");
+					firstTime = true;
+				} catch (BufferUnderflowException e3) {
+					sendPacketToServer(
+							new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "ACK packet received with missing block number"),
+							receivePacket.getPort());
+					if (verbose)
+						System.out.println("ACK packet received with a missing block number");
 					firstTime = true;
 				}
 			} else if (opcode == Opcode.ERROR) {
@@ -499,9 +530,21 @@ public class TFTPClient {
 	public void sendPacketToServer(TFTPPacket tftpPacket, int port) {
 		// send packet to client
 		if (run == Mode.TEST)
-			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, sendPort);
+			if (invalidTID) {
+				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
+				invalidTID = false;
+			} else {
+				sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip,
+						sendPort);
+			}
 		else
+			try{
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
+			} catch(IllegalArgumentException e) {
+				System.out.println("Server unexpectedly disconnected");
+				firstTime = true;
+				return;
+			}
 		// print info on the packet
 		if (verbose) {
 			System.out.println("\nClient: Sending packet");
@@ -616,7 +659,8 @@ public class TFTPClient {
 					c.sendRequest(in);
 				}
 				// if it is the first time, create the RRQ/WRQ packet(s)
-				if(!firstTime) c.sendReceivePacket();
+				if (!firstTime || lastAckSent)
+					c.sendReceivePacket();
 			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
