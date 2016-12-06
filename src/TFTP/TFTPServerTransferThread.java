@@ -230,59 +230,60 @@ public class TFTPServerTransferThread implements Runnable {
 	}
 
 	private void processDataPacket(byte[] packetData) throws IOException {
-		if (receivedWRQPacket) {
-			verboseLog("Opcode: DATA");
-			try {
-				// Parse DATA packet
-				DataPacket dataPacket = new DataPacket(packetData);
-				// Write the data from the DATA packet only if it is the next
-				// block
-				if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
-					// Write data to file
-					tftpWriter.writeToFile(dataPacket.getData());
-					// Save previous block number
-					previousBlockNumber = dataPacket.getBlockNumber();
-				} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1){
-                    //If next data packet block is GREATER than what the next block should be send error 4
+        if (receivedWRQPacket) {
+            verboseLog("Opcode: DATA");
+            try {
+                // Parse DATA packet
+                DataPacket dataPacket = new DataPacket(packetData);
+                // Write the data from the DATA packet only if it is the next block
+                if (dataPacket.getBlockNumber() == previousBlockNumber + 1) {
+                    verboseLog("Writing block " + dataPacket.getBlockNumber());
+                    // Write data to file
+                    tftpWriter.writeToFile(dataPacket.getData());
+                    // Save previous block number
+                    previousBlockNumber = dataPacket.getBlockNumber();
+                } else if (dataPacket.getBlockNumber() > previousBlockNumber + 1){
+                    verboseLog("Invalid DATA Packet");
+                    // If next data packet block is GREATER than what the next block should be send error 4
                     sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid DATA packet"));
-                } else {
-                    //If next data packet block is LESS than what the next block should be send corresponding ACK
-                    // Create an ACK packet with the same block number as the DATA packet
-                    verboseLog("Sending ACK with block " + dataPacket.getBlockNumber());
-                    sendPacketToClient(new ACKPacket(dataPacket.getBlockNumber()));
-                    if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
-                        // transfer finished for WRQ
-                        tftpWriter.closeHandle();
-                        System.out.println("Complete File Has Been Received");
-                        endTransfer();
-                    }
+                    return;
                 }
-			} catch (IOException e) {
-				String errorMessage = e.getMessage();
-				switch (errorMessage) {
-				case "There is not enough space on the disk":
-					System.out.println("Disk full");
-					sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
-					break;
-				case "The device is not ready": // thrown when storage is
-												// removed during transfer
-					System.out.println("Access Violation");
-					sendPacketToClient(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"));
-					break;
-				default:
-					throw e;
-				}
-			} catch (InvalidBlockNumberException | PacketOverflowException e) {
-				verboseLog("Invalid DATA packet");
-				sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid DATA packet"));
-			} catch (MalformedPacketException e) {
-				verboseLog("Invalid DATA packet");
-				sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
-			}
-		} else {
-			verboseLog("Received DATA packet without receiving a RRQ packet first");
-			verboseLog("Dropping DATA packet");
-		}
+                // If next data packet block is LESS than or equal to what the next block should be then send corresponding ACK
+                // Create an ACK packet with the same block number as the DATA packet
+                verboseLog("Sending ACK with block " + dataPacket.getBlockNumber());
+                sendPacketToClient(new ACKPacket(dataPacket.getBlockNumber()));
+                if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
+                    // transfer finished for WRQ
+                    tftpWriter.closeHandle();
+                    System.out.println("Complete File Has Been Received");
+                    endTransfer();
+                }
+            } catch (IOException e) {
+                String errorMessage = e.getMessage();
+                switch (errorMessage) {
+                    case "There is not enough space on the disk":
+                        System.out.println("Disk full");
+                        sendPacketToClient(new ErrorPacket(ErrorCode.DISC_FULL_OR_ALLOCATION_EXCEEDED, "Disk full"));
+                        break;
+                    case "The device is not ready":
+                        // thrown when storage is removed during transfer
+                        System.out.println("Access Violation");
+                        sendPacketToClient(new ErrorPacket(ErrorCode.ACCESS_VIOLATION, "Access violation"));
+                        break;
+                    default:
+                        throw e;
+                }
+            } catch (InvalidBlockNumberException | PacketOverflowException e) {
+                verboseLog("Invalid DATA packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid DATA packet"));
+            } catch (MalformedPacketException e) {
+                verboseLog("Invalid DATA packet");
+                sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, e.getMessage()));
+            }
+        } else {
+            verboseLog("Received DATA packet without receiving a RRQ packet first");
+            verboseLog("Dropping DATA packet");
+        }
 	}
 
 	private void processACKPacket(byte[] packetData) throws IOException {
@@ -389,7 +390,14 @@ public class TFTPServerTransferThread implements Runnable {
 		} catch (SocketException e) {
 			e.printStackTrace();
 		} finally {
-			closeSocket();
+            try {
+                if (tftpWriter != null) {
+                    tftpWriter.closeHandle();
+                }
+            } catch (IOException e) {
+                verboseLog("Forcefully closing file handle");
+            }
+            closeSocket();
 		}
 	}
 
