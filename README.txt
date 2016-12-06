@@ -182,6 +182,7 @@ Mohamed Zalat
 
 FILES
 │   README.txt
+|   SYSC3303_ProjectDescription.pdf
 │
 ├───Images
 |	Iteration1_UML_Class_diagrams.png
