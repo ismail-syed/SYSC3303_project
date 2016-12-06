@@ -16,7 +16,7 @@ SET UP INSTRUCTIONS
 
 1) Open Eclipse
 2) Select File -> Import then General -> Existing Projects into Workspace
-3) For the root directory select the submitted folder "SYSC3303_Iteration2"
+3) For the root directory select the submitted folder "SYSC3303_Iteration5"
 3) Run TFTPClient.java
 	 i) Type DEFAULT to chose the directory the program is running in or
 	    type in a path to a directory (the directory can be changed by typing "cd").
@@ -188,6 +188,7 @@ FILES
 │       Iteration2_UML_Class_diagrams.png
 |	Iteration3_UML_Class_diagrams.png
 |	Iteration4_UML_Class_diagrams.png
+|	Iteration5_UML_Class_diagrams.png
 │       Timing_Diagram_Error_1.png
 │       Timing_Diagram_Error_2.png
 │       Timing_Diagram_Error_3.png
@@ -196,6 +197,8 @@ FILES
 │       Timing_Diagram_Error_6.png
 │       UCM_read_file_transfer.png
 │       UCM_write_file_transfer.png
+|	MultiTransfer_RRQ.png
+|	MultiTransfer_WRQ.png
 |	Timing_Diagram_Lost_WRQ.png
 |	Timing_Diagram_Lost_RRQ.png
 |	Timing_Diagram_Duplicate_WRQ.png
