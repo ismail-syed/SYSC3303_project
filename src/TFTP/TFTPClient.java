@@ -538,7 +538,13 @@ public class TFTPClient {
 						sendPort);
 			}
 		else
+			try{
 			sendPacket = new DatagramPacket(tftpPacket.getByteArray(), tftpPacket.getByteArray().length, ip, port);
+			} catch(IllegalArgumentException e) {
+				System.out.println("Server unexpectedly disconnected");
+				firstTime = true;
+				return;
+			}
 		// print info on the packet
 		if (verbose) {
 			System.out.println("\nClient: Sending packet");
