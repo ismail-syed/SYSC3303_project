@@ -260,51 +260,6 @@ FILES
 
 TEST INSTRUCTIONS (NETWORK ERRORS)
 
-(Note: The numbers in the files below is how big the files are in bytes)
-
-1) Complete the set-up instruction above before you continue!
-2) When making a read request the files available are:
-- Server_0.txt
-- Server_250.txt
-- Server_512.txt
-- Server_1000.txt
-- Server_90000.txt
-3) When making a write request the files available are:
-- Client_0.txt
-- Client_250.txt
-- Client_512.txt
-- Client_1000.txt
-- Client_90000.txt
-4) Choose Normal mode by typing 0
-	i) The simulator will not wait for packets from client
-       ii) Any transfer(read or write) will be completed without any network errors
-       		- I/O Erros will be handled here
-5) Restart The sim and enter 1 for packet loss
-	i) Choose DATA, ACK, WRQ, or RRQ packet to loose
-		- Choosing DATA or ACK will prompt you to enter the packet number. this is the block number to be lost
-		- Choosing WRQ or RRQ doe not prompt anything further
-       ii) The Sim will loose the specified packet but the file would still transfer correctly
-       		- Use fc on command line to compare files to see if the application handled the error
-6) Restart the sim and enter 2 for packet delay
-	i) Choose DATA, ACK, WRQ, or RRQ packet to delay
-		- Choosing DATA or ACK will prompt you to enter the packet number. this is the block number to be delay
-		- Choosing WRQ or RRQ doe not prompt for a packet number
-		- After choosing the packet number or not, you will need to specify a delay length in milliseconds
-			This is how long the sim will hold the packet specified before sending it to its destination
-       ii) The sim will delay the specified packet and any duplicated will be discarded
-       		- The file should be transfered coreectly
-		- Use fc on command line to compare files to see if the application handled the error
-7) Restart the sim and enter 3 for packet duplication
-	i) Choose DATA, ACK, WRQ, or RRQ packet to duplicate
-		- The duplicate prompts will work very much the same way as delay, 
-			so refer to the above point on how to set up the tests
-       ii) The sim will duplicate the specified packet and that packet will be discarded
-       		- The file should be transfered coreectly
-		- Use fc on command line to compare files to see if the application handled the error
-8) The tests above work for both READ and WRITE and can be repeated for both
-9) The test files provided will help you perform these tests for all cases:
-	- less than 512 bytes
-	- exactly 512 bytes
-	- greater than 512 bytes
+Refer to SYSC3303_ProjectDescription.pdf for extensive test case.
 
 ========================================================================
