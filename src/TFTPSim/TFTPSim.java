@@ -33,11 +33,6 @@ public class TFTPSim {
 	private boolean listenOnClient;
 	private byte[] data;
 
-	// We use this to cache the delayed packet's byte data and compare it to
-	// the one we've received to ensure they are different.
-	// This is important for the delay error sim mode
-	private byte[] delayedPacketByteData = new byte[516];
-
 	// Ports
 	private int serverPort = 69;
 	private int clientPort;
@@ -860,15 +855,5 @@ public class TFTPSim {
 			}
 		}
 		return false;
-	}
-
-	// Helper method to get the data packet array from a packet
-	private byte[] getDataArray(byte[] inputData, DatagramPacket packet) {
-		return Arrays.copyOfRange(inputData, 0, packet.getLength());
-	}
-
-	private boolean initialRequest(DatagramPacket packet) {
-		Opcode currentOpcode = Opcode.asEnum((packet.getData()[1]));
-		return (currentOpcode == Opcode.READ || currentOpcode == Opcode.WRITE) ? true : false;
 	}
 }
