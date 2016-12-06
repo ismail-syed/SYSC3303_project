@@ -49,6 +49,8 @@ public class TFTPSim {
 
 	private static Opcode packetTypeForErrorSim;
 	private static int packetNumberForErrorSim, delayLengthForErrorSim;
+	
+	private static int position = -1; //position used to add zero
 
 	/**
 	 * @param args
@@ -135,6 +137,10 @@ public class TFTPSim {
 			} else if (packetTypeForErrorSim == Opcode.ERROR) {
 				// get error type
 				errorSimMode = promptForError4ErrorPacketErrors();
+			}
+			
+			if(errorSimMode == ErrorSimState.ADD_ZERO){
+				position = requestPosition();
 			}
 		}
 
@@ -344,9 +350,18 @@ public class TFTPSim {
 				}
 				System.out.println(
 						"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-				data = PacketCorrupter.corruptPacket(
+				if(simMode.getSimState() == ErrorSimState.ADD_ZERO){
+					if(position >= receivePacket.getLength() && position != -1){
+						System.out.println("\nThe length of the packet is lower than the position specified\n");
+					}else{
+						data = Arrays.copyOfRange(data, 0, receivePacket.getLength());
+						data[position] = (byte)0;
+					}
+				}else{
+					data = PacketCorrupter.corruptPacket(
 						Arrays.copyOfRange(receivePacket.getData(), 0, receivePacket.getLength()),
 						simMode.getSimState());
+				}
 				sendPacket = new DatagramPacket(data, data.length, LocalIP, serverPort);
 				simMode.setSimState(ErrorSimState.NORMAL);
 			} else {
@@ -477,8 +492,17 @@ public class TFTPSim {
 				}
 				System.out.println(
 						"==> " + TFTPPacket.toString(Arrays.copyOfRange(data, 0, receivePacket.getLength())));
-				data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
+				if(simMode.getSimState() == ErrorSimState.ADD_ZERO){
+					if(position >= receivePacket.getLength() && position != -1){
+						System.out.println("\nThe length of the packet is lower than the position specified\n");
+					}else{
+						data = Arrays.copyOfRange(data, 0, receivePacket.getLength());
+						data[position] = (byte)0;
+					}
+				}else{
+					data = PacketCorrupter.corruptPacket(Arrays.copyOfRange(data, 0, receivePacket.getLength()),
 						simMode.getSimState());
+				}
 				sendPacket = new DatagramPacket(data, data.length, ClientIP, clientPort);
 				simMode.setSimState(ErrorSimState.NORMAL);
 			} else {
@@ -702,10 +726,11 @@ public class TFTPSim {
 			System.out.println("(4) Missing Error Code");
 			System.out.println("(5) Missing Error Message");
 			System.out.println("(6) Missing Zero");
+			System.out.println("(7) Add Zero");
 
 			if (sc.hasNextInt()) {
 				userInput = sc.nextInt();
-				if (userInput > 0 && userInput < 7) {
+				if (userInput > 0 && userInput < 8) {
 					break;
 				}
 			} else {
@@ -726,6 +751,8 @@ public class TFTPSim {
 			return ErrorSimState.ERROR_MISSING_ERROR_MESSAGE;
 		case 6:
 			return ErrorSimState.ERROR_MISSING_ZERO;
+		case 7:
+			return ErrorSimState.ADD_ZERO;
 		default:
 			return ErrorSimState.NORMAL;
 		}
@@ -739,40 +766,7 @@ public class TFTPSim {
 			System.out.println("(2) Extra Data");
 			System.out.println("(3) Invalid Block Number");
 			System.out.println("(4) Missing Block Number");
-
-			if (sc.hasNextInt()) {
-				userInput = sc.nextInt();
-				if (userInput > 0 && userInput < 5) {
-					break;
-				}
-			} else {
-				sc.next();
-				continue;
-			}
-		}
-		switch (userInput) {
-		case 1:
-			return ErrorSimState.INVALID_OPCODE;
-		case 2:
-			return ErrorSimState.EXTRA_DATA_AT_END;
-		case 3:
-			return ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
-		case 4:
-			return ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
-		default:
-			return ErrorSimState.NORMAL;
-		}
-	}
-
-	private static ErrorSimState promptForError4DataPacketErrors() {
-		int userInput;
-		while (true) {
-			System.out.println("Select Invalid TFTP packet to generate: ");
-			System.out.println("(1) Invalid Opcode");
-			System.out.println("(2) Extra Data");
-			System.out.println("(3) Invalid Block Number");
-			System.out.println("(4) Missing Block Number");
-			System.out.println("(5) Missing Data");
+			System.out.println("(5) Add Zero");
 
 			if (sc.hasNextInt()) {
 				userInput = sc.nextInt();
@@ -794,7 +788,46 @@ public class TFTPSim {
 		case 4:
 			return ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
 		case 5:
+			return ErrorSimState.ADD_ZERO;
+		default:
+			return ErrorSimState.NORMAL;
+		}
+	}
+
+	private static ErrorSimState promptForError4DataPacketErrors() {
+		int userInput;
+		while (true) {
+			System.out.println("Select Invalid TFTP packet to generate: ");
+			System.out.println("(1) Invalid Opcode");
+			System.out.println("(2) Extra Data");
+			System.out.println("(3) Invalid Block Number");
+			System.out.println("(4) Missing Block Number");
+			System.out.println("(5) Missing Data");
+			System.out.println("(6) Add Zero");
+
+			if (sc.hasNextInt()) {
+				userInput = sc.nextInt();
+				if (userInput > 0 && userInput < 7) {
+					break;
+				}
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		switch (userInput) {
+		case 1:
+			return ErrorSimState.INVALID_OPCODE;
+		case 2:
+			return ErrorSimState.EXTRA_DATA_AT_END;
+		case 3:
+			return ErrorSimState.DATA_OR_ACK_INVALID_BLOCK_NUMBER;
+		case 4:
+			return ErrorSimState.DATA_OR_ACK_MISSING_BLOCK_NUMBER;
+		case 5:
 			return ErrorSimState.DATA_MISSING_DATA;
+		case 6:
+			return ErrorSimState.ADD_ZERO;
 		default:
 			return ErrorSimState.NORMAL;
 		}
@@ -811,10 +844,11 @@ public class TFTPSim {
 			System.out.println("(5) Missing Mode");
 			System.out.println("(6) Corrupted Mode");
 			System.out.println("(7) Missing 2nd Zero");
+			System.out.println("(8) Add Zero");
 
 			if (sc.hasNextInt()) {
 				userInput = sc.nextInt();
-				if (userInput > 0 && userInput < 8) {
+				if (userInput > 0 && userInput < 9) {
 					break;
 				}
 			} else {
@@ -837,6 +871,8 @@ public class TFTPSim {
 			return ErrorSimState.RQ_INVALID_MODE;
 		case 7:
 			return ErrorSimState.RQ_MISSING_SECOND_ZERO;
+		case 8:
+			return ErrorSimState.ADD_ZERO;
 		default:
 			return ErrorSimState.NORMAL;
 		}
@@ -855,5 +891,20 @@ public class TFTPSim {
 			}
 		}
 		return false;
+	}
+	
+	private static int requestPosition() {
+		int pos;
+		while (true) {
+			System.out.println("Enter Position to Add Zero:");
+			if (sc.hasNextInt()) {
+				pos = sc.nextInt();
+				break;
+			} else {
+				sc.next();
+				continue;
+			}
+		}
+		return pos;
 	}
 }
