@@ -292,6 +292,7 @@ public class TFTPSim {
 				//do delay stuff
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), LocalIP, serverPort);
 				simulateDelayedPacket(sendReceiveSocket, sendPacket);
+				duplicateData = true;
 			}
 			
 			// Since we dropped the first RRQ/WRQ request, we need wait for the
@@ -431,6 +432,7 @@ public class TFTPSim {
 				//do delay stuff
 				sendPacket = new DatagramPacket(data, receivePacket.getLength(), ClientIP, clientPort);
 				simulateDelayedPacket(sendSocket, sendPacket);
+				duplicateData = true;
 			}
 
 			if (currentOpCode == Opcode.DATA) {
