@@ -242,17 +242,21 @@ public class TFTPServerTransferThread implements Runnable {
 					tftpWriter.writeToFile(dataPacket.getData());
 					// Save previous block number
 					previousBlockNumber = dataPacket.getBlockNumber();
-				}
-				// Create an ACK packet with the same block number as the DATA
-				// packet
-				verboseLog("Sending ACK with block " + dataPacket.getBlockNumber());
-				sendPacketToClient(new ACKPacket(dataPacket.getBlockNumber()));
-				if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
-					// transfer finished for WRQ
-					tftpWriter.closeHandle();
-					System.out.println("Complete File Has Been Received");
-					endTransfer();
-				}
+				} else if (dataPacket.getBlockNumber() > previousBlockNumber + 1){
+                    //If next data packet block is GREATER than what the next block should be send error 4
+                    sendPacketToClient(new ErrorPacket(ErrorCode.ILLEGAL_OPERATION, "Invalid DATA packet"));
+                } else {
+                    //If next data packet block is LESS than what the next block should be send corresponding ACK
+                    // Create an ACK packet with the same block number as the DATA packet
+                    verboseLog("Sending ACK with block " + dataPacket.getBlockNumber());
+                    sendPacketToClient(new ACKPacket(dataPacket.getBlockNumber()));
+                    if (dataPacket.getData().length < DataPacket.MAX_DATA_SIZE) {
+                        // transfer finished for WRQ
+                        tftpWriter.closeHandle();
+                        System.out.println("Complete File Has Been Received");
+                        endTransfer();
+                    }
+                }
 			} catch (IOException e) {
 				String errorMessage = e.getMessage();
 				switch (errorMessage) {
@@ -297,7 +301,12 @@ public class TFTPServerTransferThread implements Runnable {
 						// previousBlockNumber send error 4
 						if (ackPacket.getBlockNumber() > previousBlockNumber) {
 							throw new InvalidBlockNumberException("Data is out of order");
-						}
+						} else if (ackPacket.getBlockNumber() < previousBlockNumber){
+                            //drop packet
+                            verboseLog("Dropping ACK packet with lower block number of " + ackPacket.getBlockNumber()
+                            + ", expected block number " + previousBlockNumber);
+                            return;
+                        }
 					}
 					previousBlockNumber = ackPacket.getBlockNumber() + 1;
 					// Send next block of file until there are no more blocks
