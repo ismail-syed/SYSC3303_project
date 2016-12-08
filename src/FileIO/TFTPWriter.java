@@ -37,7 +37,7 @@ public class TFTPWriter {
      * @param data the byte array to write the file
      * @since 1.0
      */
-    public void writeToFile(byte[] data) throws Exception {
+    public void writeToFile(byte[] data) throws IOException {
         outputStream.write(data);
     }
 

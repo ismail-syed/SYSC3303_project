@@ -16,7 +16,7 @@ SET UP INSTRUCTIONS
 
 1) Open Eclipse
 2) Select File -> Import then General -> Existing Projects into Workspace
-3) For the root directory select the submitted folder "SYSC3303_Iteration2"
+3) For the root directory select the submitted folder "SYSC3303_Iteration5"
 3) Run TFTPClient.java
 	 i) Type DEFAULT to chose the directory the program is running in or
 	    type in a path to a directory (the directory can be changed by typing "cd").
@@ -134,21 +134,72 @@ Mohamed Zalat
 - Added proper file handling to client
 - Debugged Sim to point out errors
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 4
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kunall Banerjee
+- Worked briefly on the error simulator
+- Added TFTP Packet format errors 4 & 5
+- Timing Diagrams
+- Project management and coordination
+
+Ismail Syed & Shasthra Ranasinghe
+- Error simulator
+	- Refactoring
+	- Added support for error packets 4 & 5
+
+Aritra Sengupta
+- Server side implementation
+- Refactored server-side code
+
+Mohamed Zalat
+- Client side implementation
+- Refactored client-side code
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ITERATION 5
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kunall Banerjee
+- Project management and coordination
+-Bug fixes
+- Testing
+
+Ismail Syed & Shasthra Ranasinghe
+- Testing
+- Bug fixes in the error simulator
+
+
+Aritra Sengupta
+- Bug fixes on the server-side
+
+Mohamed Zalat
+- Timing diagrams
+- Bug fixes on client-side
+
 ========================================================================
 
 FILES
 │   README.txt
+|   SYSC3303_ProjectDescription.pdf
 │
 ├───Images
 |	Iteration1_UML_Class_diagrams.png
 │       Iteration2_UML_Class_diagrams.png
 |	Iteration3_UML_Class_diagrams.png
+|	Iteration4_UML_Class_diagrams.png
+|	Iteration5_UML_Class_diagrams.png
 │       Timing_Diagram_Error_1.png
 │       Timing_Diagram_Error_2.png
 │       Timing_Diagram_Error_3.png
+|	Timing_Diagram_Error_4.png
+|	Timing_Diagram_Error_5.png
 │       Timing_Diagram_Error_6.png
 │       UCM_read_file_transfer.png
 │       UCM_write_file_transfer.png
+|	MultiTransfer_RRQ.png
+|	MultiTransfer_WRQ.png
 |	Timing_Diagram_Lost_WRQ.png
 |	Timing_Diagram_Lost_RRQ.png
 |	Timing_Diagram_Duplicate_WRQ.png
@@ -156,7 +207,7 @@ FILES
 |	Timing_Diagram_Delay_WRQ.png
 |	Timing_Diagram_Delay_WRQ.png
 │
-└───SYSC3303_Iteration3
+└───SYSC3303_Iteration4
     │   .classpath
     │   .project
     │
@@ -185,13 +236,18 @@ FILES
         │       TFTPWriter.java
         │
         ├───TFTP
-	|	ErrorSimDelayThread.java
         │       TFTPClient.java
-	|	TFTPErrorSimMode.java
         │       TFTPServer.java
         │       TFTPServerTransferThread.java
-        │       TFTPSim.java
         │
+	|----TFTPSim
+	|	ErrorSimDelayThread.java
+	|	TFTPErrorSimMode.java
+        │       TFTPSim.java
+        │       CorruptionTester.java
+        │       InvalidTIDThread.java
+        │       PacketCorrupter.java
+	|
         └───TFTPPackets
                 ACKPacket.java
                 DataPacket.java
@@ -205,57 +261,6 @@ FILES
 
 TEST INSTRUCTIONS (NETWORK ERRORS)
 
-(Note: The numbers in the files below is how big the files are in bytes)
-
-1) Complete Set up instruction above.
-2) When making a read request the files available are:
-- Server_0.txt
-- Server_250.txt
-- Server_512.txt
-- Server_1000.txt
-- Server_90000.txt
-3) When making a write request the files available are:
-- Client_0.txt
-- Client_250.txt
-- Client_512.txt
-- Client_1000.txt
-- Client_90000.txt
-4) Choose Normal mode by typing 0
-	i) The simulator will not wait for packets from client
-       ii) Any transfer(read or write) will be completed without any network errors
-       		- I/O Erros will be handled here
-5) Restart The sim and enter 1 for packet loss
-	i) Choose DATA, ACK, WRQ, or RRQ packet to loose
-		- Choosing DATA or ACK will prompt you to enter the packet number. this is the block number to be lost
-		- Choosing WRQ or RRQ doe not prompt anything further
-       ii) The Sim will loose the specified packet but the file would still transfer correctly
-       		- Use fc on command line to compare files to see if the application handled the error
-6) Restart the sim and enter 2 for packet delay
-	i) Choose DATA, ACK, WRQ, or RRQ packet to delay
-		- Choosing DATA or ACK will prompt you to enter the packet number. this is the block number to be delay
-		- Choosing WRQ or RRQ doe not prompt for a packet number
-		- After choosing the packet number or not, you will need to specify a delay length in milliseconds
-			This is how long the sim will hold the packet specified before sending it to its destination
-       ii) The sim will delay the specified packet and any duplicated will be discarded
-       		- The file should be transfered coreectly
-		- Use fc on command line to compare files to see if the application handled the error
-7) Restart the sim and enter 3 for packet duplication
-	i) Choose DATA, ACK, WRQ, or RRQ packet to duplicate
-		- The duplicate prompts will work very much the same way as delay, 
-			so refer to the above point on how to set up the tests
-       ii) The sim will duplicate the specified packet and that packet will be discarded
-       		- The file should be transfered coreectly
-		- Use fc on command line to compare files to see if the application handled the error
-8) The tests above work for both READ and WRITE and can be repeated for both
-9) The test files provided will help you perform these tests for all cases:
-	- less than 512 bytes
-	- exactly 512 bytes
-	- greater than 512 bytes
-
-========================================================================
-
-CREDITS
-
-Assignment 1 sample solution from the Course Materials Page
+Refer to SYSC3303_ProjectDescription.pdf for extensive test case.
 
 ========================================================================

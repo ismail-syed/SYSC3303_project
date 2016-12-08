@@ -93,7 +93,7 @@ public class RRQWRQPacketCommon extends TFTPPacket {
         } else if (Opcode.asEnum((int) opcodeAsByte) == Opcode.READ) {
             this.opcode = Opcode.READ;
         } else {
-            throw new MalformedPacketException("RRQPacket does not have a valid opcode");
+            throw new MalformedPacketException("Packet does not have a valid opcode");
         }
         // Get filename between opcode byte and second zero byte
 
@@ -128,7 +128,16 @@ public class RRQWRQPacketCommon extends TFTPPacket {
             throw new MalformedPacketException("Packet does not end with a 0 byte");
         }
 
-        createPacket(Opcode.WRITE, fileName, mode);
+        //check if there are any trailing bytes after the 0 byte
+        if(bb.hasRemaining()){
+            if(opcode.equals(Opcode.READ)){
+                throw new MalformedPacketException("There are trailing bytes in the RRQ Packet");
+            } else {
+                throw new MalformedPacketException("There are trailing bytes in the WRQ Packet");
+            }
+        } else {
+            createPacket(opcode, fileName, mode);
+        }
     }
 
     /**
